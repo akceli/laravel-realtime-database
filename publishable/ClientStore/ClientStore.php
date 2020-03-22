@@ -3,8 +3,8 @@
 namespace App\ClientStore;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
-use Akceli\RealtimeClientStoreSync\PusherStoreCollection;
-use Akceli\RealtimeClientStoreSync\PusherStoreInterface;
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreInterface;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
