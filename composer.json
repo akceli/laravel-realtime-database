@@ -15,7 +15,8 @@
     "autoload": {
         "psr-4": {
             "Akceli\\RealtimeClientStoreSync\\": "src/"
-        }
+        },
+        "exclude-from-classmap": ["/publishable/"]
     },
     "extra": {
         "branch-alias": {
