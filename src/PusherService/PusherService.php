@@ -3,7 +3,10 @@
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
+use App\ClientStore\ClientStore;
+use App\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PusherService
 {
@@ -79,8 +82,15 @@ class PusherService
 
     public static function modelResolveWithTrashed($id, $class)
     {
+        /** @var User $model */
         $model = $class::getModel();
-        return $model::query()->withTrashed()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id)->first();
+        $query = $model::query()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id);
+
+        if ($usingSoftDeletes = in_array(SoftDeletes::class, array_keys((new \ReflectionClass($class))->getTraits()))) {
+            $query->withTrashed();
+        }
+
+        return $query->first();
     }
 
     public static function clearQueue()
@@ -96,6 +106,7 @@ class PusherService
      * @param array $data
      * @param string $apiCall
      * @param int $delay
+     * @throws \Exception
      */
     public static function broadcastEvent(string $channel, string $store, string $prop, string $method, array $data, string $apiCall = null, int $delay = 0)
     {
@@ -145,7 +156,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::UpsertCollection($add_or_update),
-            ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -158,7 +169,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::UpdateInCollection,
-            ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -171,7 +182,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::AddToCollection,
-            ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -182,7 +193,7 @@ class PusherService
         if (is_null($model)) {
             $data = ClientStoreController::prepareStore(null, ClientStoreController::getStore($store, $store_id), $property);
         } else {
-            $data = ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model);
+            $data = ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model);
         }
         PusherService::broadcastEvent(
             $store. '.' . $store_id,

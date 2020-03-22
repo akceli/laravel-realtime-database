@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace Akceli\RealtimeClientStoreSync\Middleware;
 
-use App\Services\PusherServices\PusherService;
+use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

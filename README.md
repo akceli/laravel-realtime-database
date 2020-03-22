@@ -53,5 +53,7 @@ class User extends Authenticatable
     use ClientStoreModelTrait;
     use Notifiable;
 
+    public $store_locations = ['users.users'];
+
 ```
 
