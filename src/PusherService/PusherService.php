@@ -3,7 +3,6 @@
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
-use App\Models\Enums\PusherServiceEvent;
 use Illuminate\Database\Eloquent\Model;
 
 class PusherService
@@ -16,9 +15,10 @@ class PusherService
      */
     public static function updated(Model $model)
     {
-        $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
+        $class_name = get_class($model);
+        $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Updated > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Updated;
+            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Updated;
         }
     }
 
@@ -27,9 +27,10 @@ class PusherService
      */
     public static function created(Model $model)
     {
-        $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
+        $class_name = get_class($model);
+        $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Created > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Created;
+            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Created;
         }
     }
 
@@ -38,9 +39,10 @@ class PusherService
      */
     public static function deleted(Model $model)
     {
-        $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
+        $class_name = get_class($model);
+        $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Deleted > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Deleted;
+            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Deleted;
         }
     }
 
