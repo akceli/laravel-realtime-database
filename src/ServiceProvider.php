@@ -14,7 +14,7 @@ class ServiceProvider extends Provider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/publishable/client_store.php' => base_path('app/ClientStore/ClientStore.php'),
+            __DIR__ . '/publishable/ClientStore' => base_path('app/ClientStore'),
 	    ]);
     }
 }

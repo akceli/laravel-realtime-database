@@ -5,7 +5,7 @@ namespace App\ClientStore;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
 use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
 use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreInterface;
-use App\Models\User;
+use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,7 +19,7 @@ class ClientStore implements ClientStoreInterface
     public static function getStore($store, int $store_id): array
     {
         $stores = [
-            'user' => self::getUserStore($store_id),
+            'users' => self::getUserStore($store_id),
         ];
 
         if (in_array($store, array_keys($stores))) {
@@ -39,7 +39,7 @@ class ClientStore implements ClientStoreInterface
      */
     public static function getStoreId(string $store, Model $model): int
     {
-        Auth::user()->account_id;
+        return Auth::user()->id;
     }
 
     /**
@@ -49,7 +49,7 @@ class ClientStore implements ClientStoreInterface
     public static function getUserStore(int $account_id): array
     {
         return [
-            'users' => new PusherStoreCollection(User::withTrashed()),
+            'users' => new PusherStoreCollection(User::query()),
         ];
     }
 }
