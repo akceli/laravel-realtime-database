@@ -8,17 +8,13 @@ class ServiceProvider extends Provider
 {
     public function register()
     {
-        $this->commands([
-//            AkceliGenerateCommand::class,
-//            AkceliBuildRelationshipsCommand::class,
-//            AkceliPublishCommand::class,
-        ]);
+        $this->commands([]);
     }
 
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/publishable/ClientStore' => base_path('app/ClientStore'),
+            __DIR__ . '/publishable/client_store.php' => base_path('app/ClientStore/ClientStore.php'),
 	    ]);
     }
 }
