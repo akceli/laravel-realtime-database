@@ -51,6 +51,43 @@ class PusherService
         return self::$queue;
     }
 
+    public static function flushQueue()
+    {
+        foreach (self::getQueue() as $identifier => $change_type) {
+            $parts = explode(':', $identifier);
+            $id = $parts[0];
+            $class = $parts[1];
+            if ($instance = self::modelResolveWithTrashed($id, $class)) {
+                if ($change_type === PusherServiceEvent::Created) {
+                    $instance->broadcastCreatedEvents();
+                }
+
+                if ($change_type === PusherServiceEvent::Updated) {
+                    $instance->broadcastUpdatedEvents();
+                }
+
+                if ($change_type === PusherServiceEvent::Deleted) {
+                    $instance->broadcastDeletedEvents();
+                }
+            }
+        }
+
+        self::clearQueue();
+
+        return self::$responseContent;
+    }
+
+    public static function modelResolveWithTrashed($id, $class)
+    {
+        $model = $class::getModel();
+        return $model::query()->withTrashed()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id)->first();
+    }
+
+    public static function clearQueue()
+    {
+        self::$queue = [];
+    }
+
     /**
      * @param string $channel
      * @param string $store
@@ -83,7 +120,7 @@ class PusherService
                 $payload['data'] = null;
             } elseif ($id = $data['id'] ?? null) {
                 $payload['data'] = null;
-                $payload['api_call'] = "v1/client_store/{$store}/{$prop}/{$id}";
+                $payload['api_call'] = "client_store/{$store}/{$prop}/{$id}";
             } else {
                 throw new \Exception(json_encode([
                     'Message' => 'Exceeding pusher limit, and not fallback was provided',
@@ -93,48 +130,10 @@ class PusherService
             }
         }
 
+        return;
         event(new UpdateClientEvent($payload, 'event', [
             new Channel($channel),
         ]));
-    }
-
-    public static function flushQueue()
-    {
-        foreach (self::getQueue() as $identifier => $change_type) {
-            $parts = explode(':', $identifier);
-            $id = $parts[0];
-            $class = $parts[1];
-            if (in_array(PusherBroadcasterInterface::class, class_implements($class))) {
-                if ($instance = self::modelResolveWithTrashed($id, $class)) {
-                    if ($change_type === PusherServiceEvent::Created) {
-                        $instance->broadcastCreatedEvents();
-                    }
-
-                    if ($change_type === PusherServiceEvent::Updated) {
-                        $instance->broadcastUpdatedEvents();
-                    }
-
-                    if ($change_type === PusherServiceEvent::Deleted) {
-                        $instance->broadcastDeletedEvents();
-                    }
-                }
-            }
-        }
-
-        self::clearQueue();
-
-        return self::$responseContent;
-    }
-
-    public static function modelResolveWithTrashed($id, $class)
-    {
-        $model = $class::getModel();
-        return $model::query()->withTrashed()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id)->first();
-    }
-
-    public static function clearQueue()
-    {
-        self::$queue = [];
     }
 
     public static function UpsertCollection(string $storeProp, int $store_id, Model $model, bool $add_or_update = true)
@@ -143,7 +142,8 @@ class PusherService
         $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
-            $store, $property,
+            $store,
+            $property,
             PusherServiceMethod::UpsertCollection($add_or_update),
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
@@ -155,7 +155,8 @@ class PusherService
         $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
-            $store, $property,
+            $store,
+            $property,
             PusherServiceMethod::UpdateInCollection,
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
@@ -167,7 +168,8 @@ class PusherService
         $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
-            $store, $property,
+            $store,
+            $property,
             PusherServiceMethod::AddToCollection,
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
@@ -184,7 +186,8 @@ class PusherService
         }
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
-            $store, $property,
+            $store,
+            $property,
             PusherServiceMethod::SetRoot,
             $data
         );
@@ -196,7 +199,8 @@ class PusherService
         $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
-            $store, $property,
+            $store,
+            $property,
             PusherServiceMethod::RemoveFromCollection,
             ['id' => $id]
         );
