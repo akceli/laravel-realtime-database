@@ -2,7 +2,7 @@
 
 namespace Akceli\RealtimeClientStoreSync;
 
-use App\Http\Controllers\Api\ClientStoreController;
+use App\ClientStore\ClientStore;
 
 /**
  * Trait PusherBroadcasterTrait
@@ -19,7 +19,7 @@ trait PusherBroadcasterTrait
         foreach ($this->store_locations ?? [] as $location) {
             [$store, $prop] = explode('.', $location);
             $store_id = $this->getStoreId($store);
-            $store = ClientStoreController::getStore($store, $store_id)[$prop];
+            $store = ClientStore::getStore($store, $store_id)[$prop];
 
             if ($store instanceof PusherStoreCollection) {
                 PusherService::AddToCollection($location, $store_id, $this);
@@ -38,7 +38,7 @@ trait PusherBroadcasterTrait
         foreach ($this->store_locations ?? [] as $location) {
             [$store, $prop] = explode('.', $location);
             $store_id = $this->getStoreId($store);
-            $store = ClientStoreController::getStore($store, $store_id)[$prop];
+            $store = ClientStore::getStore($store, $store_id)[$prop];
 
             if ($store instanceof PusherStoreCollection) {
                 PusherService::UpdateInCollection($location, $store_id, $this);
@@ -57,7 +57,7 @@ trait PusherBroadcasterTrait
         foreach ($this->store_locations ?? [] as $location) {
             [$store, $prop] = explode('.', $location);
             $store_id = $this->getStoreId($store);
-            $store = ClientStoreController::getStore($store, $store_id)[$prop];
+            $store = ClientStore::getStore($store, $store_id)[$prop];
 
             if ($store instanceof PusherStoreCollection) {
                 PusherService::RemoveFromCollection($location, $store_id, $this->id);
@@ -67,13 +67,12 @@ trait PusherBroadcasterTrait
         }
     }
 
+    /**
+     * @param string $store
+     * @return int
+     */
     public function getStoreId(string $store): int
     {
-        if ($store === 'account') return $this->account_id;
-        if ($store === 'market') return $this->market_id;
-        if ($store === 'activeRecord') return $this->record_id;
-        if ($store === 'fus') return $this->account_id;
-
-        return $this->account_id;
+        return ClientStore::getStoreId($store, $this);
     }
 }

@@ -16,7 +16,7 @@ class PusherStoreCollection implements PusherStoreInterface
      * @param string $resource
      * @param $builder
      */
-    public function __construct(string $resource, $builder)
+    public function __construct($builder, string $resource = null)
     {
         $this->resource = $resource;
         $this->builder = $builder;
@@ -24,17 +24,19 @@ class PusherStoreCollection implements PusherStoreInterface
 
     public function getDataFromModel(Model $model)
     {
-        return (new $this->resource($model))->resolve();
+        return ($this->resource) ? (new $this->resource($model))->resolve() : $model->toArray();
     }
 
     public function getSingleData(int $id)
     {
-        return new $this->resource($this->builder->findOrFail($id));
+        $model = $this->builder->findOrFail($id);
+        return ($this->resource) ? new $this->resource($model) : $model;
     }
 
     public function getData()
     {
-        return $this->resource::collection($this->builder->get());
+        $collection = $this->builder->get();
+        return ($this->resource) ? $this->resource::collection($collection) : $collection;
     }
 
     public function getDefaultData()

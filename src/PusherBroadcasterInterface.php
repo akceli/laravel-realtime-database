@@ -21,4 +21,10 @@ interface PusherBroadcasterInterface
      * @return void
      */
     public function broadcastDeletedEvents();
+
+    /**
+     * @param string $store
+     * @return int
+     */
+    public function getStoreId(string $store): int;
 }
