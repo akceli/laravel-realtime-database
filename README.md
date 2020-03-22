@@ -1,5 +1,11 @@
 # Akceli Realtime Client Store Sync
 
+### Require the composer package
+```bash
+composer require akceli/realtime-client-store-sync dev-master
+
+```
+
 ### Publish Assets
 Publish the Akceli\RealtimeClientStoreSync\ServiceProvider
 ```bash
@@ -30,8 +36,10 @@ File: app/Http/Kernel.php
 ```php
 File: routes/api.php
 
+// Dont forget include the Store api
 \Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController::apiRoutes();
 
+// Dont forget to add the middleware to the api routes
 Route::middleware(['auth:api', 'client-store'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -76,7 +84,9 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
-    use DatabaseTransactions;
+
+
+    //  This is the trait you need to add
     use ClientStoreTestMiddlewareOverwrites;
 }
 

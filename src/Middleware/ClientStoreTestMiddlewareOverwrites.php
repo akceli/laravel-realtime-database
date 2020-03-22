@@ -3,7 +3,7 @@
 namespace Akceli\RealtimeClientStoreSync\Middleware;
 
 use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
-use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Testing\TestResponse;
 use function GuzzleHttp\Psr7\build_query;
 
 trait ClientStoreTestMiddlewareOverwrites
