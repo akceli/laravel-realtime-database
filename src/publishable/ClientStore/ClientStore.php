@@ -33,6 +33,8 @@ class ClientStore implements ClientStoreInterface
      * This is used by the SyncClientStoreTrait
      * this will allow you to write a global store_id resolver that can be overwritten at the model level if you chose
      *
+     * This is only used when using the $store_locations to resolve the correct channel
+     *
      * @param string $store
      * @param Model $model
      * @return int
