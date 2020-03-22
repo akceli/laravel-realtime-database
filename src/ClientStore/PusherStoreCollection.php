@@ -1,12 +1,13 @@
 <?php
 
-namespace Akceli\RealtimeClientStoreSync;
+namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PusherStoreSingle implements PusherStoreInterface
+class PusherStoreCollection implements PusherStoreInterface
 {
-    private string $resource;
+    /** @var string */
+    private $resource;
     private $builder;
 
     /**
@@ -33,12 +34,12 @@ class PusherStoreSingle implements PusherStoreInterface
 
     public function getData()
     {
-        $model = $this->builder->firstOrFail();
-        return ($this->resource) ? new $this->resource($model) : $model;
+        $collection = $this->builder->get();
+        return ($this->resource) ? $this->resource::collection($collection) : $collection;
     }
 
     public function getDefaultData()
     {
-        return null;
+        return [];
     }
 }

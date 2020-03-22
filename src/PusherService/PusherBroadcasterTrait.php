@@ -1,7 +1,8 @@
 <?php
 
-namespace Akceli\RealtimeClientStoreSync;
+namespace Akceli\RealtimeClientStoreSync\PusherService;
 
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
 use App\ClientStore\ClientStore;
 
 /**
@@ -14,10 +15,12 @@ trait PusherBroadcasterTrait
      * Get Models to be processed.
      * @return void
      */
-    public function broadcastCreatedEvents(): void
+    public function broadcastCreatedEvents()
     {
         foreach ($this->store_locations ?? [] as $location) {
-            [$store, $prop] = explode('.', $location);
+            $parts = explode('.', $location);
+            $store = $parts[0];
+            $prop = $parts[1];
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
@@ -33,10 +36,12 @@ trait PusherBroadcasterTrait
      * Get Models to be processed.
      * @return void
      */
-    public function broadcastUpdatedEvents(): void
+    public function broadcastUpdatedEvents()
     {
         foreach ($this->store_locations ?? [] as $location) {
-            [$store, $prop] = explode('.', $location);
+            $parts = explode('.', $location);
+            $store = $parts[0];
+            $prop = $parts[1];
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
@@ -52,10 +57,12 @@ trait PusherBroadcasterTrait
      * Get Models to be processed.
      * @return void
      */
-    public function broadcastDeletedEvents(): void
+    public function broadcastDeletedEvents()
     {
         foreach ($this->store_locations ?? [] as $location) {
-            [$store, $prop] = explode('.', $location);
+            $parts = explode('.', $location);
+            $store = $parts[0];
+            $prop = $parts[1];
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
@@ -71,7 +78,7 @@ trait PusherBroadcasterTrait
      * @param string $store
      * @return int
      */
-    public function getStoreId(string $store): int
+    public function getStoreId(string $store)
     {
         return ClientStore::getStoreId($store, $this);
     }

@@ -2,7 +2,6 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
-use Akceli\RealtimeClientStoreSync\PusherStoreInterface;
 use App\ClientStore\ClientStore;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;

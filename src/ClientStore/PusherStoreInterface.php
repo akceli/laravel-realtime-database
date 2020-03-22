@@ -1,6 +1,6 @@
 <?php
 
-namespace Akceli\RealtimeClientStoreSync;
+namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Illuminate\Database\Eloquent\Model;
 

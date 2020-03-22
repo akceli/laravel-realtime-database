@@ -1,6 +1,6 @@
 <?php
 
-namespace Akceli\RealtimeClientStoreSync;
+namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 interface PusherBroadcasterInterface
 {

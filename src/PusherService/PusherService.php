@@ -1,15 +1,9 @@
 <?php
 
-namespace Akceli\RealtimeClientStoreSync;
+namespace Akceli\RealtimeClientStoreSync\PusherService;
 
-use App\Events\UpdateClientEvent;
-use App\Http\Controllers\Api\ClientStoreController;
-use App\Models\Enums\PusherServiceEventTypeEnum;
-use App\Models\Enums\PusherServiceMethodEnum;
-use App\Services\ExceptionService;
-use App\Services\PolyMorphicResolverService;
-use App\Traits\BaseAccountModelTrait;
-use Illuminate\Broadcasting\Channel;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
+use App\Models\Enums\PusherServiceEvent;
 use Illuminate\Database\Eloquent\Model;
 
 class PusherService
@@ -18,35 +12,35 @@ class PusherService
     private static array $responseContent = [];
 
     /**
-     * @param Model|BaseAccountModelTrait $model
+     * @param Model $model
      */
     public static function updated(Model $model)
     {
         $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
-        if (PusherServiceEventTypeEnum::Updated > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEventTypeEnum::Updated;
+        if (PusherServiceEvent::Updated > $currentState) {
+            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Updated;
         }
     }
 
     /**
-     * @param Model|BaseAccountModelTrait $model
+     * @param Model $model
      */
     public static function created(Model $model)
     {
         $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
-        if (PusherServiceEventTypeEnum::Created > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEventTypeEnum::Created;
+        if (PusherServiceEvent::Created > $currentState) {
+            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Created;
         }
     }
 
     /**
-     * @param Model|BaseAccountModelTrait $model
+     * @param Model $model
      */
     public static function deleted(Model $model)
     {
         $currentState = self::$queue[$model->id.':'.$model->class_name] ?? 0;
-        if (PusherServiceEventTypeEnum::Deleted > $currentState) {
-            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEventTypeEnum::Deleted;
+        if (PusherServiceEvent::Deleted > $currentState) {
+            self::$queue[$model->id.':'.$model->class_name] = PusherServiceEvent::Deleted;
         }
     }
 
@@ -89,11 +83,11 @@ class PusherService
                 $payload['data'] = null;
                 $payload['api_call'] = "v1/client_store/{$store}/{$prop}/{$id}";
             } else {
-                ExceptionService::report(new \Exception(json_encode([
+                throw new \Exception(json_encode([
                     'Message' => 'Exceeding pusher limit, and not fallback was provided',
                     'size' => $size,
                     'payload' => $payload
-                ])));
+                ]));
             }
         }
 
@@ -105,18 +99,20 @@ class PusherService
     public static function flushQueue()
     {
         foreach (self::getQueue() as $identifier => $change_type) {
-            [$id, $class] = explode(':', $identifier);
+            $parts = explode(':', $identifier);
+            $id = $parts[0];
+            $class = $parts[1];
             if (in_array(PusherBroadcasterInterface::class, class_implements($class))) {
-                if ($instance = PolyMorphicResolverService::resolveWithTrashed($id, $class)) {
-                    if ($change_type === PusherServiceEventTypeEnum::Created) {
+                if ($instance = self::modelResolveWithTrashed($id, $class)) {
+                    if ($change_type === PusherServiceEvent::Created) {
                         $instance->broadcastCreatedEvents();
                     }
 
-                    if ($change_type === PusherServiceEventTypeEnum::Updated) {
+                    if ($change_type === PusherServiceEvent::Updated) {
                         $instance->broadcastUpdatedEvents();
                     }
 
-                    if ($change_type === PusherServiceEventTypeEnum::Deleted) {
+                    if ($change_type === PusherServiceEvent::Deleted) {
                         $instance->broadcastDeletedEvents();
                     }
                 }
@@ -128,6 +124,12 @@ class PusherService
         return self::$responseContent;
     }
 
+    public static function modelResolveWithTrashed($id, $class)
+    {
+        $model = $class::getModel();
+        return $model::query()->withTrashed()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id)->first();
+    }
+
     public static function clearQueue()
     {
         self::$queue = [];
@@ -135,40 +137,44 @@ class PusherService
 
     public static function UpsertCollection(string $storeProp, int $store_id, Model $model, bool $add_or_update = true)
     {
-        [$store, $property] = explode('.', $storeProp);
+        $store = explode('.', $storeProp)[0];
+        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
             $store, $property,
-            PusherServiceMethodEnum::UpsertCollection($add_or_update),
+            PusherServiceMethod::UpsertCollection($add_or_update),
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
     public static function UpdateInCollection(string $storeProp, int $store_id, Model $model)
     {
-        [$store, $property] = explode('.', $storeProp);
+        $store = explode('.', $storeProp)[0];
+        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
             $store, $property,
-            PusherServiceMethodEnum::UpdateInCollection,
+            PusherServiceMethod::UpdateInCollection,
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
     public static function AddToCollection(string $storeProp, int $store_id, Model $model)
     {
-        [$store, $property] = explode('.', $storeProp);
+        $store = explode('.', $storeProp)[0];
+        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
             $store, $property,
-            PusherServiceMethodEnum::AddToCollection,
+            PusherServiceMethod::AddToCollection,
             ClientStoreController::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
     public static function SetRoot(string $storeProp, int $store_id, Model $model = null)
     {
-        [$store, $property] = explode('.', $storeProp);
+        $store = explode('.', $storeProp)[0];
+        $property = explode('.', $storeProp)[1];
         if (is_null($model)) {
             $data = ClientStoreController::prepareStore(null, ClientStoreController::getStore($store, $store_id), $property);
         } else {
@@ -177,18 +183,19 @@ class PusherService
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
             $store, $property,
-            PusherServiceMethodEnum::SetRoot,
+            PusherServiceMethod::SetRoot,
             $data
         );
     }
 
     public static function RemoveFromCollection(string $storeProp, int $store_id, int $id)
     {
-        [$store, $property] = explode('.', $storeProp);
+        $store = explode('.', $storeProp)[0];
+        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
             $store, $property,
-            PusherServiceMethodEnum::RemoveFromCollection,
+            PusherServiceMethod::RemoveFromCollection,
             ['id' => $id]
         );
     }
