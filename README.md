@@ -57,3 +57,28 @@ class User extends Authenticatable
 
 ```
 
+
+### Add the testing api overrides
+since the middleware send client store changes along side the response
+you will need to remove the client store changes for your tests.  Just use the and trait
+and tests will continue to work as expected.
+```
+File: tests\TestCase.php
+
+<?php
+
+namespace Tests;
+
+use Akceli\RealtimeClientStoreSync\Middleware\ClientStoreTestMiddlewareOverwrites;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    use CreatesApplication;
+    use DatabaseTransactions;
+    use ClientStoreTestMiddlewareOverwrites;
+}
+
+```
+
