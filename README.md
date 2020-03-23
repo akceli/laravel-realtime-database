@@ -92,3 +92,86 @@ abstract class TestCase extends BaseTestCase
 
 ```
 
+### Javascript code to handle the response
+```javascript
+// Http Middle Ware
+function http() {
+  const httpInstance = axios.create({
+    baseURL: process.env.MIX_BASE_API_URL,
+    headers: {'Authorization': `Bearer ${LocalStorageService.getApiToken()}`}
+  });
+
+  httpInstance.interceptors.response.use(
+    response => successHandler(response),
+    error => errorHandler(error),
+  );
+
+  return httpInstance;
+}
+
+const successHandler = (response) => {
+  // If the client store changes are present, then process them
+  if (response.data.clientStoreChanges) {
+    response.data.clientStoreChanges.forEach(change => {
+      store.dispatch('pusherEvent', change);
+    });
+
+    // Delete the clint store changes bacause the rest of the app should not care about it.
+    delete response.data.clientStoreChanges;
+  }
+  
+  // Making sure that the responseData gets formatted the same as before we put the
+  // ClientStore Middleware on the api.
+  if (response.data.responseData) {
+    response.data = response.data.responseData;
+  }
+  return response;
+};
+
+//  Vue.js Actions
+const actions = {
+  pusherEvent({state, commit}, payload) {
+    setTimeout(() => {
+      if (payload.data) {
+        commit(payload.method, payload);
+      } else {
+        http().get(payload.api_call).then(res => {
+          payload.data = res.data;
+          commit(payload.method, payload);
+        }); 
+      }
+
+    }, payload.delay);
+  },
+};
+
+//  Vue.js Mutations
+const mutations = {
+  updateInCollection(state, payload) {
+    state[payload.store][payload.prop] = state[payload.store][payload.prop].map(item => item.id === payload.data.id ? {...item, ...payload.data} : item);
+  },
+  addToCollection(state, payload) {
+    let collection = state[payload.store][payload.prop];
+    if (!collection.some(item => item.id === payload.data.id)) {
+      collection.push(payload.data);
+    }
+  },
+  upsertCollection(state, payload) {
+    let collection = state[payload.store][payload.prop];
+    if (!collection.some(item => item.id === payload.data.id)) {
+      collection.push(payload.data);
+    } else {
+      state[payload.store][payload.prop] = state[payload.store][payload.prop].map(item => item.id === payload.data.id ? {...item, ...payload.data} : item);
+    }
+  },
+  removeFromCollection(state, payload) {
+    state[payload.store][payload.prop] = state[payload.store][payload.prop].filter(item => item.id !== payload.data.id);
+  },
+  setRoot(state, payload) {
+    state[payload.store][payload.prop] = payload.data;
+  },
+}
+
+
+```
+
