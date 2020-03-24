@@ -49,23 +49,6 @@ Route::middleware(['auth:api', 'client-store'])->group(function () {
 
 ```
 
-### Add the ClientStoreModel Trait to any model you with to track
-```
-
-use App\ClientStore\ClientStoreModelTrait;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-
-class User extends Authenticatable
-{
-    use ClientStoreModelTrait;
-    use Notifiable;
-
-    public $store_locations = ['users.users'];
-
-```
-
-
 ### Add the testing api overrides
 since the middleware send client store changes along side the response
 you will need to remove the client store changes for your tests.  Just use the and trait
@@ -91,6 +74,31 @@ abstract class TestCase extends BaseTestCase
 }
 
 ```
+
+### Setup Your Client Store
+File: app/ClientStore/ClientStore.php
+
+Add the stores you want on the client, there is a users store example created by default
+
+### Add the ClientStoreModel Trait to any model you with to track
+```
+
+use App\ClientStore\ClientStoreModelTrait;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use ClientStoreModelTrait;
+    use Notifiable;
+
+    public $store_locations = ['users.users'];
+
+```
+
+### Api Complete
+Now all of your api changes will automatically update the client State if it applies the following middleware to all api call.
+
 
 ### Javascript code to handle the response
 ```javascript
