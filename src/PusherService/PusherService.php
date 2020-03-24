@@ -3,7 +3,11 @@
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
 use App\ClientStore\ClientStore;
+use App\ClientStore\ClientStoreModel;
+use App\ClientStore\ClientStoreModelTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,7 +25,10 @@ class PusherService
         $class_name = get_class($model);
         $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Updated > $currentState) {
-            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Updated;
+            self::$queue[$model->id.':'.$class_name] = [
+                'type' => PusherServiceEvent::Updated,
+                'store_locations' => self::mapStoreLocations($model)
+            ];
         }
     }
 
@@ -33,7 +40,10 @@ class PusherService
         $class_name = get_class($model);
         $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Created > $currentState) {
-            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Created;
+            self::$queue[$model->id.':'.$class_name] = [
+                'type' => PusherServiceEvent::Created,
+                'store_locations' => self::mapStoreLocations($model)
+            ];
         }
     }
 
@@ -45,8 +55,21 @@ class PusherService
         $class_name = get_class($model);
         $currentState = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Deleted > $currentState) {
-            self::$queue[$model->id.':'.$class_name] = PusherServiceEvent::Deleted;
+            self::$queue[$model->id.':'.$class_name] = [
+                'type' => PusherServiceEvent::Deleted,
+                'store_locations' => self::mapStoreLocations($model)
+            ];
         }
+    }
+
+    public static function mapStoreLocations(Model $model)
+    {
+        return array_map(function ($location) use ($model) {
+            return [
+                'location' => explode(':', $location)[0],
+                'channel_id' => $model[explode(':', $location)[1]]
+            ];
+        }, $model->store_locations ?? []);
     }
 
     public static function getQueue()
@@ -56,21 +79,30 @@ class PusherService
 
     public static function flushQueue()
     {
-        foreach (self::getQueue() as $identifier => $change_type) {
+        foreach (self::getQueue() as $identifier => $change_data) {
+            $change_type = $change_data['type'];
+            $locations = $change_data['store_locations'];
             $parts = explode(':', $identifier);
             $id = $parts[0];
             $class = $parts[1];
-            if ($instance = self::modelResolveWithTrashed($id, $class)) {
-                if ($change_type === PusherServiceEvent::Created) {
-                    $instance->broadcastCreatedEvents();
-                }
 
-                if ($change_type === PusherServiceEvent::Updated) {
-                    $instance->broadcastUpdatedEvents();
-                }
+            foreach ($locations as $info) {
+                $location = $info['location'];
+                $channel_id = $info['channel_id'];
+                $store = explode('.', $location)[0];
+                $prop = explode('.', $location)[1];
 
-                if ($change_type === PusherServiceEvent::Deleted) {
-                    $instance->broadcastDeletedEvents();
+                $clientStore = ClientStore::getStore($store, $channel_id)[$prop];
+                $model = $clientStore->getSingleData($id);
+
+                if ($clientStore instanceof PusherStoreCollection) {
+                    if ($model instanceof Model) {
+                        PusherService::UpsertCollection($location, $channel_id, $model, (bool) $model);
+                    } else {
+                        PusherService::RemoveFromCollection($location, $channel_id, $id);
+                    }
+                } else {
+                    PusherService::SetRoot($location, $channel_id, $model);
                 }
             }
         }
@@ -80,10 +112,14 @@ class PusherService
         return self::$responseContent;
     }
 
+    public static function getModel(string $class): Model
+    {
+        return $class::getModel();
+    }
+
     public static function modelResolveWithTrashed($id, $class)
     {
-        /** @var User $model */
-        $model = $class::getModel();
+        $model = self::getModel($class);
         $query = $model::query()->where($model->getTable() . '.' . $model->getKeyName(), '=', $id);
 
         if ($usingSoftDeletes = in_array(SoftDeletes::class, array_keys((new \ReflectionClass($class))->getTraits()))) {
@@ -191,7 +227,7 @@ class PusherService
         $store = explode('.', $storeProp)[0];
         $property = explode('.', $storeProp)[1];
         if (is_null($model)) {
-            $data = ClientStoreController::prepareStore(null, ClientStoreController::getStore($store, $store_id), $property);
+            $data = ClientStoreController::prepareStore(null, ClientStore::getStore($store, $store_id), $property)->toArray();
         } else {
             $data = ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model);
         }

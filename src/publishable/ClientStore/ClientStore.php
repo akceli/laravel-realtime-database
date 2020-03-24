@@ -5,9 +5,9 @@ namespace App\ClientStore;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
 use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
 use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreInterface;
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreRaw;
+use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreSingle;
 use App\User;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 class ClientStore implements ClientStoreInterface
 {
@@ -18,8 +18,24 @@ class ClientStore implements ClientStoreInterface
      */
     public static function getStore($store, int $store_id): array
     {
+        /**
+         * Register Stores Here
+         */
         $stores = [
-            'users' => self::getUserStore($store_id),
+            'users' => [
+                'users' => new PusherStoreCollection(User::query()),
+                'account' => new PusherStoreSingle(User::query()),
+                'stats' => new PusherStoreRaw(function () {
+                    return User::query();
+                }, null),
+            ],
+            'forms' => [
+                'users' => new PusherStoreCollection(User::query()),
+                'account' => new PusherStoreSingle(User::query()),
+                'stats' => new PusherStoreRaw(function () {
+                    return User::query();
+                }, null),
+            ]
         ];
 
         if (in_array($store, array_keys($stores))) {
@@ -27,31 +43,5 @@ class ClientStore implements ClientStoreInterface
         } else {
             throw new \InvalidArgumentException('Invalid Store Selection. available stores are [' . implode(', ', array_keys($stores)) . ']');
         }
-    }
-
-    /**
-     * This is used by the SyncClientStoreTrait
-     * this will allow you to write a global store_id resolver that can be overwritten at the model level if you chose
-     *
-     * This is only used when using the $store_locations to resolve the correct channel
-     *
-     * @param string $store
-     * @param Model $model
-     * @return int
-     */
-    public static function getStoreId(string $store, Model $model): int
-    {
-        return Auth::user()->id;
-    }
-
-    /**
-     * @param int $account_id
-     * @return array|PusherStoreInterface[]
-     */
-    public static function getUserStore(int $account_id): array
-    {
-        return [
-            'users' => new PusherStoreCollection(User::query()),
-        ];
     }
 }
