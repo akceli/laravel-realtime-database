@@ -14,34 +14,38 @@ class ClientStore implements ClientStoreInterface
     /**
      * @param $store
      * @param int $store_id
-     * @return array|ClientStorePropertyInterface[]
+     * @return array|ClientStorePropertyInterface[][]
      */
-    public static function getStore($store, int $store_id): array
+    public static function getStore(int $store_id): array
     {
         /**
          * Register Stores Here
          */
-        $stores = [
-            'users' => [
-                'users' => new ClientStorePropertyCollection(User::query()),
-                'account' => new ClientStorePropertySingle(User::query()),
-                'stats' => new ClientStorePropertyRaw(function () {
-                    return User::query();
-                }, null),
-            ],
-            'forms' => [
-                'users' => new ClientStorePropertyCollection(User::query()),
-                'account' => new ClientStorePropertySingle(User::query()),
-                'stats' => new ClientStorePropertyRaw(function () {
-                    return User::query();
-                }, null),
-            ]
+        return [
+            'user' => self::userStore($store_id),
+            'forms' => self::formsStore($store_id)
         ];
+    }
 
-        if (in_array($store, array_keys($stores))) {
-            return $stores[$store];
-        } else {
-            throw new \InvalidArgumentException('Invalid Store Selection. available stores are [' . implode(', ', array_keys($stores)) . ']');
-        }
+    public static function userStore(int $user_id)
+    {
+        return [
+            'users' => new ClientStorePropertyCollection(User::query()),
+            'account' => new ClientStorePropertySingle(User::query()),
+            'stats' => new ClientStorePropertyRaw(function () {
+                return User::query();
+            }, null)
+        ];
+    }
+
+    public static function formsStore(int $account_id)
+    {
+        return [
+            'users' => new ClientStorePropertyCollection(User::query()),
+            'account' => new ClientStorePropertySingle(User::query()),
+            'stats' => new ClientStorePropertyRaw(function () {
+                return User::query();
+            }, null),
+        ];
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
-use App\ClientStore\ClientStore;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -13,7 +12,7 @@ class ClientStoreController extends Controller
     public static function apiRoutes()
     {
         Route::get('client_store/{store}/{store_id}/{property?}/{id?}', function (Request $request, string $store, int $store_id = null, string $property = null, int $id = null) {
-            return self::prepareStore($request, ClientStore::getStore($store, $store_id), $property, $id);
+            return self::prepareStore($request, ClientStoreService::getStore($store, $store_id), $property, $id);
         });
     }
     

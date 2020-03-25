@@ -5,6 +5,7 @@ namespace Akceli\RealtimeClientStoreSync\PusherService;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreService;
 use App\ClientStore\ClientStore;
 use App\ClientStore\ClientStoreModel;
 use App\ClientStore\ClientStoreModelTrait;
@@ -92,7 +93,7 @@ class PusherService
                 $store = explode('.', $location)[0];
                 $prop = explode('.', $location)[1];
 
-                $clientStore = ClientStore::getStore($store, $channel_id)[$prop];
+                $clientStore = ClientStoreService::getStore($store, $channel_id)[$prop];
                 $model = $clientStore->getSingleData($id);
 
                 if ($clientStore instanceof ClientStorePropertyCollection) {
@@ -192,7 +193,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::UpsertCollection($add_or_update),
-            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -205,7 +206,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::UpdateInCollection,
-            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -218,7 +219,7 @@ class PusherService
             $store,
             $property,
             PusherServiceMethod::AddToCollection,
-            ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
         );
     }
 
@@ -227,9 +228,9 @@ class PusherService
         $store = explode('.', $storeProp)[0];
         $property = explode('.', $storeProp)[1];
         if (is_null($model)) {
-            $data = ClientStoreController::prepareStore(null, ClientStore::getStore($store, $store_id), $property)->toArray();
+            $data = ClientStoreController::prepareStore(null, ClientStoreService::getStore($store, $store_id), $property)->toArray();
         } else {
-            $data = ClientStore::getStore($store, $store_id)[$property]->getDataFromModel($model);
+            $data = ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model);
         }
         PusherService::broadcastEvent(
             $store. '.' . $store_id,
