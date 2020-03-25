@@ -11,7 +11,7 @@ class ClientStoreService
      */
     public static function getStore($store, int $store_id): array
     {
-        $stores = config('client-store.store')::getStore($store_id);
+        $stores = config('client-store.store')::getStores($store_id);
 
         if (in_array($store, array_keys($stores))) {
             return $stores[$store];

@@ -3,20 +3,16 @@
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
-use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreService;
-use App\ClientStore\ClientStore;
-use App\ClientStore\ClientStoreModel;
-use App\ClientStore\ClientStoreModelTrait;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PusherService
 {
-    private static array $queue = [];
-    private static array $responseContent = [];
+    private static $queue = [];
+    private static $responseContent = [];
 
     /**
      * @param Model $model
@@ -68,7 +64,7 @@ class PusherService
         return array_map(function ($location) use ($model) {
             return [
                 'location' => explode(':', $location)[0],
-                'channel_id' => $model[explode(':', $location)[1]]
+                'channel_id' => $model[explode(':', $location)[1] ?? config('client-store.default_store_id')]
             ];
         }, $model->store_locations ?? []);
     }

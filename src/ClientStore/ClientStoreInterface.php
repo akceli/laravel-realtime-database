@@ -10,5 +10,5 @@ interface ClientStoreInterface
      * @param int $store_id
      * @return array|ClientStorePropertyInterface[]
      */
-    public static function getStore(int $store_id): array;
+    public static function getStores(int $store_id): array;
 }

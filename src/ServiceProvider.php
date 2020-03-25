@@ -15,6 +15,7 @@ class ServiceProvider extends Provider
     {
         $this->publishes([
             __DIR__ . '/publishable/ClientStore' => base_path('app/ClientStore'),
+            __DIR__ . '/publishable/config' => base_path('config'),
 	    ]);
     }
 }
