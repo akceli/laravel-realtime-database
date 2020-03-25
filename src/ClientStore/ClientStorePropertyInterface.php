@@ -4,7 +4,7 @@ namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Illuminate\Database\Eloquent\Model;
 
-interface PusherStoreInterface
+interface ClientStorePropertyInterface
 {
     public function getData();
     public function getDefaultData();

@@ -3,10 +3,10 @@
 namespace App\ClientStore;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreInterface;
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreRaw;
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreSingle;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyInterface;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyRaw;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertySingle;
 use App\User;
 
 class ClientStore implements ClientStoreInterface
@@ -14,7 +14,7 @@ class ClientStore implements ClientStoreInterface
     /**
      * @param $store
      * @param int $store_id
-     * @return array|PusherStoreInterface[]
+     * @return array|ClientStorePropertyInterface[]
      */
     public static function getStore($store, int $store_id): array
     {
@@ -23,16 +23,16 @@ class ClientStore implements ClientStoreInterface
          */
         $stores = [
             'users' => [
-                'users' => new PusherStoreCollection(User::query()),
-                'account' => new PusherStoreSingle(User::query()),
-                'stats' => new PusherStoreRaw(function () {
+                'users' => new ClientStorePropertyCollection(User::query()),
+                'account' => new ClientStorePropertySingle(User::query()),
+                'stats' => new ClientStorePropertyRaw(function () {
                     return User::query();
                 }, null),
             ],
             'forms' => [
-                'users' => new PusherStoreCollection(User::query()),
-                'account' => new PusherStoreSingle(User::query()),
-                'stats' => new PusherStoreRaw(function () {
+                'users' => new ClientStorePropertyCollection(User::query()),
+                'account' => new ClientStorePropertySingle(User::query()),
+                'stats' => new ClientStorePropertyRaw(function () {
                     return User::query();
                 }, null),
             ]

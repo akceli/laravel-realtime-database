@@ -4,7 +4,7 @@ namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreInterface;
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
 use App\ClientStore\ClientStore;
 use App\ClientStore\ClientStoreModel;
 use App\ClientStore\ClientStoreModelTrait;
@@ -95,7 +95,7 @@ class PusherService
                 $clientStore = ClientStore::getStore($store, $channel_id)[$prop];
                 $model = $clientStore->getSingleData($id);
 
-                if ($clientStore instanceof PusherStoreCollection) {
+                if ($clientStore instanceof ClientStorePropertyCollection) {
                     if ($model instanceof Model) {
                         PusherService::UpsertCollection($location, $channel_id, $model, (bool) $model);
                     } else {

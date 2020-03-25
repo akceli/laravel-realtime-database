@@ -9,7 +9,7 @@ interface ClientStoreInterface
     /**
      * @param $store
      * @param int $store_id
-     * @return array|PusherStoreInterface[]
+     * @return array|ClientStorePropertyInterface[]
      */
     public static function getStore($store, int $store_id): array;
 }

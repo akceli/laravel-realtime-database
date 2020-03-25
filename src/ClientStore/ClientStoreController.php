@@ -19,7 +19,7 @@ class ClientStoreController extends Controller
     
     /**
      * @param Request $request
-     * @param PusherStoreInterface[] $store
+     * @param ClientStorePropertyInterface[] $store
      * @param string $property = null
      * @param int $id = null
      * @return array

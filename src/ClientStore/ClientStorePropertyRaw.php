@@ -4,7 +4,7 @@ namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PusherStoreRaw implements PusherStoreInterface
+class ClientStorePropertyRaw implements ClientStorePropertyInterface
 {
     private $data;
     private $default;

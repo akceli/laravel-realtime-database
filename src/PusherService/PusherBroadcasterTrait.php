@@ -2,7 +2,7 @@
 
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
-use Akceli\RealtimeClientStoreSync\ClientStore\PusherStoreCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
 use App\ClientStore\ClientStore;
 
 /**
@@ -24,7 +24,7 @@ trait PusherBroadcasterTrait
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
-            if ($store instanceof PusherStoreCollection) {
+            if ($store instanceof ClientStorePropertyCollection) {
                 PusherService::AddToCollection($location, $store_id, $this);
             } else {
                 PusherService::SetRoot($location, $store_id, $this);
@@ -45,7 +45,7 @@ trait PusherBroadcasterTrait
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
-            if ($store instanceof PusherStoreCollection) {
+            if ($store instanceof ClientStorePropertyCollection) {
                 PusherService::UpdateInCollection($location, $store_id, $this);
             } else {
                 PusherService::SetRoot($location, $store_id, $this);
@@ -66,7 +66,7 @@ trait PusherBroadcasterTrait
             $store_id = $this->getStoreId($store);
             $store = ClientStore::getStore($store, $store_id)[$prop];
 
-            if ($store instanceof PusherStoreCollection) {
+            if ($store instanceof ClientStorePropertyCollection) {
                 PusherService::RemoveFromCollection($location, $store_id, $this->id);
             } else {
                 PusherService::SetRoot($location, $store_id, $this);
