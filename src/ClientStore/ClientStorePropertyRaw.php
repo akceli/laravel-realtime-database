@@ -2,7 +2,9 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 class ClientStorePropertyRaw implements ClientStorePropertyInterface
 {
@@ -26,7 +28,7 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
         return $data();
     }
 
-    public function getData()
+    public function getData(Request $request)
     {
         $data = $this->data;
         return $data();
@@ -39,6 +41,7 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
 
     public function getSingleData(int $id)
     {
-        return $this->getData();
+        $data = $this->data;
+        return $data();
     }
 }

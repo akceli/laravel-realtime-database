@@ -11,7 +11,7 @@ class ClientStoreController extends Controller
 {
     public static function apiRoutes()
     {
-        Route::get('client_store/{store}/{store_id}/{property?}/{id?}', function (Request $request, string $store, int $store_id = null, string $property = null, int $id = null) {
+        Route::get('{store}/{store_id}/{property?}/{id?}', function (Request $request, string $store, int $store_id = null, string $property = null, int $id = null) {
             return self::prepareStore($request, ClientStoreService::getStore($store, $store_id), $property, $id);
         });
     }
@@ -30,7 +30,7 @@ class ClientStoreController extends Controller
         }
 
         if ($property) {
-            return $store[$property]->getData();
+            return $store[$property]->getData($request);
         }
 
         /**
@@ -44,7 +44,7 @@ class ClientStoreController extends Controller
         $response = [];
         foreach ($store as $prop => $pusherStore) {
             if (in_array($prop, $with)) {
-                $response[$prop] =  $pusherStore->getData();
+                $response[$prop] =  $pusherStore->getData($request);
             } else {
                 /** Default to not include defaults when using $with */
                 if (!$request->get('include_defaults', false)) {

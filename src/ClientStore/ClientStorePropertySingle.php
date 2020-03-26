@@ -2,7 +2,9 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 class ClientStorePropertySingle implements ClientStorePropertyInterface
 {
@@ -28,18 +30,31 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
 
     public function getSingleData(int $id)
     {
-        $model = $this->builder->findOrFail($id);
+        $model = $this->getBuilder()->findOrFail($id);
         return ($this->resource) ? new $this->resource($model) : $model;
     }
 
-    public function getData()
+    public function getData(Request $request)
     {
-        $model = $this->builder->firstOrFail();
+        $model = $this->getBuilder()->firstOrFail();
         return ($this->resource) ? new $this->resource($model) : $model;
     }
 
     public function getDefaultData()
     {
         return null;
+    }
+
+    /**
+     * @return Builder
+     */
+    public function getBuilder()
+    {
+        if (is_callable($this->builder)) {
+            $builder = $this->builder;
+            return $builder();
+        }
+
+        return $this->builder;
     }
 }
