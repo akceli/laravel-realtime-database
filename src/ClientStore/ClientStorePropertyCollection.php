@@ -11,33 +11,38 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
     /** @var string */
     private $resource;
     private $builder;
+    private $size;
 
     /**
      * PusherStoreCollection constructor.
      * @param string $resource
      * @param $builder
+     * @param int $size
      */
-    public function __construct($builder, string $resource = null)
+    public function __construct($builder, string $resource = null, int $size = null)
     {
-        $this->resource = $resource;
+        $this->resource = $resource ?? ClientStoreDefaultResource::class;
         $this->builder = $builder;
+        $this->size = $size ?? config('client-store.default_pagination_size');
     }
 
     public function getDataFromModel(Model $model)
     {
-        return ($this->resource) ? (new $this->resource($model))->resolve() : $model->toArray();
+        return (new $this->resource($model))->resolve();
     }
 
     public function getSingleData(int $id)
     {
         $model = $this->getBuilder()->findOrFail($id);
-        return ($this->resource) ? new $this->resource($model) : $model;
+        return new $this->resource($model);
     }
 
     public function getData(Request $request)
     {
-        $collection = $this->getBuilder()->get();
-        return ($this->resource) ? $this->resource::collection($collection) : $collection;
+        $size = $request->get('size', $this->size);
+        $page = $request->get('page');
+        $collection = $this->getBuilder()->paginate($size, '*', 'page', $page);
+        return $this->resource::collection($collection);
     }
 
     public function getDefaultData()

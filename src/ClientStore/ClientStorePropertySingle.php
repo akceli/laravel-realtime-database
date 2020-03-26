@@ -19,7 +19,7 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
      */
     public function __construct($builder, string $resource = null)
     {
-        $this->resource = $resource;
+        $this->resource = $resource ?? ClientStoreDefaultResource::class;
         $this->builder = $builder;
     }
 

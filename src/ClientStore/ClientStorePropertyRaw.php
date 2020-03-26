@@ -20,28 +20,29 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
     {
         $this->data = $data;
         $this->default = $default;
+        $this->resource = ClientStoreDefaultResource::class;
     }
 
     public function getDataFromModel(Model $model)
     {
         $data = $this->data;
-        return $data();
+        return new $this->resource($data());
     }
 
     public function getData(Request $request)
     {
         $data = $this->data;
-        return $data();
+        return new $this->resource($data());
     }
 
     public function getDefaultData()
     {
-        return $this->getDefaultData();
+        return $this->default;
     }
 
     public function getSingleData(int $id)
     {
         $data = $this->data;
-        return $data();
+        return new $this->resource($data());
     }
 }
