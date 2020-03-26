@@ -16,7 +16,7 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
      * @param $data
      * @param $default
      */
-    public function __construct($data, $default)
+    public function __construct($data, $default = null)
     {
         $this->data = $data;
         $this->default = $default;
