@@ -41,7 +41,16 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
     {
         $size = $request->get('size', $this->size);
         $page = $request->get('page');
-        $collection = $this->getBuilder()->paginate($size, '*', 'page', $page);
+        $total = $request->get('total');
+        $after = $request->get('after');
+        $after_column = $request->get('after_column', 'id');
+        if ($after) {
+            $collection = $this->getBuilder()->forPageAfterId($size, $after, $after_column)->paginate($size);
+        } elseif ($total) {
+            $collection = $this->getBuilder()->skip($total)->take($size)->get();
+        } else {
+            $collection = $this->getBuilder()->paginate($size, '*', 'page', $page);
+        }
         return $this->resource::collection($collection);
     }
 
