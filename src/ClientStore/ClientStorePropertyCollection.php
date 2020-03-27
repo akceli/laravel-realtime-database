@@ -51,6 +51,7 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
         } else {
             $collection = $this->getBuilder()->paginate($size, '*', 'page', $page);
         }
+
         return $this->resource::collection($collection);
     }
 

@@ -121,7 +121,7 @@ const successHandler = (response) => {
   // If the client store changes are present, then process them
   if (response.data.clientStoreChanges) {
     response.data.clientStoreChanges.forEach(change => {
-      store.dispatch('pusherEvent', change);
+      store.dispatch('clientStoreEvent', change);
     });
 
     // Delete the clint store changes bacause the rest of the app should not care about it.
@@ -138,7 +138,7 @@ const successHandler = (response) => {
 
 //  Vue.js Actions
 const actions = {
-  pusherEvent({state, commit}, payload) {
+  clientStoreEvent({state, commit}, payload) {
     setTimeout(() => {
       if (payload.data) {
         commit(payload.method, payload);
@@ -181,5 +181,26 @@ const mutations = {
 }
 
 
+```
+
+
+## Api Usage
+```javascript
+API:  client_store/{store}/{store_id}/{property}/{id}?page=2&size=5&total=20&after=12&after_column=id
+    * store: the client store
+    * store_id:  the id of the store (channel_id)
+    * property: property  (you can retrieve this info threw paginatino query)
+    * id: can get a single instance in the collection
+
+Query Parameters
+  * size: page size used in each of the pagination types
+
+  * page: standard pagination
+
+  * offset: used to get the next page from this offset
+
+  * after:  used to get the next page after this one
+  * after_column: column used in the after
+    
 ```
 
