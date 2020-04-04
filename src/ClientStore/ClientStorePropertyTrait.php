@@ -3,10 +3,16 @@
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Akceli\RealtimeClientStoreSync\PusherService\ClientStoreActions;
+use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
 use Akceli\RealtimeClientStoreSync\PusherService\PusherServiceEvent;
 use http\Exception\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Trait ClientStorePropertyTrait
+ * @package Akceli\RealtimeClientStoreSync\ClientStore
+ * @mixin ClientStorePropertyInterface
+ */
 trait ClientStorePropertyTrait
 {
     public function setModel(Model $model = null, bool $upsert = true): ClientStorePropertyInterface
@@ -27,13 +33,16 @@ trait ClientStorePropertyTrait
     {
         return $this->model;
     }
+    
+    public function getChannelId(): int
+    {
+        return $this->channel_id;
+    }
 
     public static function validClientStoreActions(): array
     {
         return [
-            ClientStoreActions::UpdateInCollection,
             ClientStoreActions::SetRoot,
-            ClientStoreActions::PatchRoot,
             ClientStoreActions::UpdateInCollection,
             ClientStoreActions::AddToCollection,
             ClientStoreActions::RemoveFromCollection,
@@ -114,5 +123,51 @@ trait ClientStorePropertyTrait
 
     public function isNotSendable(): bool {
         return !$this->sendable;
+    }
+    
+    public function broadcast($client_store_action)
+    {
+        if (!in_array($client_store_action, self::validClientStoreActions())) {
+            throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
+        }
+        
+        if ($client_store_action === false) {
+            return;
+        }
+        
+        PusherService::broadcastStoreEvent(
+            $storeProperty,
+            $client_store_action,
+        );
+    }
+
+    public function broadcastSetRoot()
+    {
+        PusherService::broadcastStoreEvent($storeProperty, ClientStoreActions::SetRoot);
+    }
+
+    public function broadcastUpdateInCollection()
+    {
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::UpdateInCollection);
+    }
+    
+    public function broadcastAddToCollection()
+    {
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::AddToCollection);
+    }
+    
+    public function broadcastRemoveFromCollection()
+    {
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::RemoveFromCollection);
+    }
+    
+    public function broadcastUpsertCollection()
+    {
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::UpsertCollection);
+    }
+
+    public function broadcastUpsertOrRemoveFromCollection(bool $add_or_update)
+    {
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::UpsertOrRemoveFromCollection($add_or_update));
     }
 }

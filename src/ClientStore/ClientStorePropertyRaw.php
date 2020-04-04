@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * Class ClientStorePropertyRaw
+ * @package Akceli\RealtimeClientStoreSync\ClientStore
+ * @mixin ClientStorePropertyInterface
+ */
 class ClientStorePropertyRaw implements ClientStorePropertyInterface
 {
     use ClientStorePropertyTrait;
@@ -18,6 +23,9 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
 
     /** @var string */
     private $property;
+    
+    /** @var int  */
+    private $channel_id;
 
     private $created_method;
     private $updated_method;
@@ -33,8 +41,9 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
      * @param $data
      * @param $default
      */
-    public function __construct(string $store, string $property, $data, $default = null)
+    public function __construct(int $channel_id, string $store, string $property, $data, $default = null)
     {
+        $this->channel_id = $channel_id;
         $this->store = $store;
         $this->property = $property;
         $this->data = $data;

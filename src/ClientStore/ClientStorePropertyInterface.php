@@ -2,6 +2,8 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
+use Akceli\RealtimeClientStoreSync\PusherService\ClientStoreActions;
+use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\Resource;
@@ -55,6 +57,12 @@ interface ClientStorePropertyInterface
      */
     public function getModel();
 
+
+    /**
+     * @return int
+     */
+    public function getChannelId(): int;
+
     /**
      * @param $client_store_action
      * @return ClientStorePropertyInterface
@@ -88,4 +96,42 @@ interface ClientStorePropertyInterface
      * @return bool
      */
     public function isNotSendable(): bool;
+
+
+    /**
+     * @param $client_store_action
+     * @return void
+     */
+    public function broadcast($client_store_action);
+
+    /**
+     * @return void
+     */
+    public function broadcastSetRoot();
+
+    /**
+     * @return void
+     */
+    public function broadcastUpdateInCollection();
+
+    /**
+     * @return void
+     */
+    public function broadcastAddToCollection();
+        
+    /**
+     * @return void
+     */
+    public function broadcastRemoveFromCollection();
+
+    /**
+     * @return void
+     */
+    public function broadcastUpsertCollection();
+
+    /**
+     * @return void
+     */
+    public function broadcastUpsertOrRemoveFromCollection(bool $add_or_update);
+
 }

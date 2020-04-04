@@ -96,12 +96,9 @@ class PusherService
                     /**
                      * If Model is set the use the event behavior to determine the
                      */
-                    PusherService::broadcastEvent(
-                        $channel_id,
-                        $storeProp->getStore(),
-                        $storeProp->getProperty(),
-                        $storeProperty->getEventBehavior($change_type),
-                        $storeProp->getDataFromModel($storeProperty->getModel())
+                    PusherService::broadcastStoreEvent(
+                        $storeProperty,
+                        $storeProperty->getEventBehavior($change_type)
                     );
                 } else {
                     /**
@@ -110,16 +107,16 @@ class PusherService
                     if ($storeProperty instanceof ClientStorePropertyCollection) {
                         $storeProperty->validateModelIsForStore($cachedModel);
                         if ($model = $storeProperty->getBuilder()->find($id)) {
-                            PusherService::UpsertCollection($storeProperty, $channel_id, $model);
+                            PusherService::UpsertCollection($storeProperty, $model);
                         } else {
-                            PusherService::RemoveFromCollection($storeProperty, $channel_id, $id);
+                            PusherService::RemoveFromCollection($storeProperty, $id);
                         }
                     } elseif ($storeProperty instanceof ClientStorePropertySingle) {
                         $storeProperty->validateModelIsForStore($cachedModel);
                         $model = $storeProperty->getBuilder()->find($id);
-                        PusherService::SetRoot($storeProperty, $channel_id, $model);
+                        PusherService::SetRoot($storeProperty, $model);
                     } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
-                        PusherService::SetRoot($storeProperty, $channel_id);
+                        PusherService::SetRoot($storeProperty);
                     }
                 }
             }
@@ -135,6 +132,13 @@ class PusherService
         return $class::getModel();
     }
 
+    /**
+     * @param $id
+     * @param $class
+     * @return \Illuminate\Database\Eloquent\Builder|Model|object|null
+     * @throws \ReflectionException
+     * @deprecated 
+     */
     public static function modelResolveWithTrashed($id, $class)
     {
         $model = self::getModel($class);
@@ -153,6 +157,28 @@ class PusherService
     }
 
     /**
+     * @param ClientStorePropertyInterface $storeProperty
+     * @param string $method
+     * @param int $delay
+     * @throws \Exception
+     */
+    public static function broadcastStoreEvent(ClientStorePropertyInterface $storeProperty, string $method, int $delay = 0)
+    {
+        if ($storeProperty->isNotSendable()) {
+            return;
+        }
+        
+        self::broadcastEvent(
+            $storeProperty->getStore(),
+            $storeProperty->getProperty(),
+            $storeProperty->getChannelId(),
+            $method,
+            $storeProperty->getDataFromModel($storeProperty->getModel()),
+            $delay
+        );
+    }
+
+    /**
      * @param string $channel
      * @param string $store
      * @param string $prop
@@ -162,11 +188,11 @@ class PusherService
      * @param int $delay
      * @throws \Exception
      */
-    public static function broadcastEvent(ClientStorePropertyInterface $storeProperty, string $channel_id, string $method, array $data, string $apiCall = null, int $delay = 0)
+    public static function broadcastEvent(string $store, string $property, string $channel_id, string $method, array $data, string $apiCall = null, int $delay = 0)
     {
         $payload = [
-            'store' => $storeProperty->getStore(),
-            'prop' => $storeProperty->getProperty(),
+            'store' => $store,
+            'prop' => $property,
             'method' => $method,
             'channel_id' => $channel_id,
             'data' => $data,
@@ -200,66 +226,44 @@ class PusherService
         ]));
     }
 
-    public static function UpsertCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model, bool $add_or_update = true)
+    public static function UpsertCollection(ClientStorePropertyInterface $storeProp, Model $model, bool $add_or_update = true)
     {
-        PusherService::broadcastEvent(
-            $channel_id,
-            $storeProp->getStore(),
-            $storeProp->getProperty(),
-            ClientStoreActions::UpsertOrRemoveFromCollection($add_or_update),
-            $storeProp->getDataFromModel($model)
+        PusherService::broadcastStoreEvent(
+            $storeProp->setModel($model),
+            ClientStoreActions::UpsertOrRemoveFromCollection($add_or_update)
         );
     }
 
-    public static function UpdateInCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model)
+    public static function UpdateInCollection(ClientStorePropertyInterface $storeProp, Model $model)
     {
-        PusherService::broadcastEvent(
-            $channel_id,
-            $storeProp->getStore(),
-            $storeProp->getProperty(),
-            ClientStoreActions::UpdateInCollection,
-            $storeProp->getDataFromModel($model)
+        PusherService::broadcastStoreEvent(
+            $storeProp->setModel($model),
+            ClientStoreActions::UpdateInCollection
         );
     }
 
-    public static function AddToCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model)
+    public static function AddToCollection(ClientStorePropertyInterface $storeProp, Model $model)
     {
-        PusherService::broadcastEvent(
-            $channel_id,
-            $storeProp->getStore(),
-            $storeProp->getProperty(),
+        PusherService::broadcastStoreEvent(
+            $storeProp->setModel($model),
             ClientStoreActions::AddToCollection,
-            $storeProp->getDataFromModel($model)
         );
     }
 
-    public static function SetRoot(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model = null)
+    public static function SetRoot(ClientStorePropertyInterface $storeProp, Model $model = null)
     {
-        $store = $storeProp->getStore();
-        $property = $storeProp->getProperty();
-        if ($model) {
-            $data = $storeProp->getDataFromModel($model);
-        } else {
-            $data = $storeProp->getData();
-            if ($data instanceof Resource) {
-                $data = $data->resolve();
-            }
-        }
-        PusherService::broadcastEvent(
-            $channel_id,
-            $storeProp->getStore(),
-            $storeProp->getProperty(),
-            ClientStoreActions::SetRoot,
-            $data
+        PusherService::broadcastStoreEvent(
+            $storeProp->setModel($model),
+            ClientStoreActions::SetRoot
         );
     }
 
-    public static function RemoveFromCollection(ClientStorePropertyInterface $storeProp, int $channel_id, int $id)
+    public static function RemoveFromCollection(ClientStorePropertyInterface $storeProp, int $id)
     {
         PusherService::broadcastEvent(
-            $channel_id,
             $storeProp->getStore(),
             $storeProp->getProperty(),
+            $storeProp->getChannelId(),
             ClientStoreActions::RemoveFromCollection,
             ['id' => $id]
         );

@@ -28,31 +28,40 @@ class ClientStoreBase
         return $properties;
     }
 
-    public static function raw($callback, $default = null)
+    /**
+     * @param int $channel_id
+     * @param $callback
+     * @param null $default
+     * @return ClientStorePropertyRaw|ClientStorePropertyInterface
+     */
+    public static function raw(int $channel_id, $callback, $default = null): ClientStorePropertyRaw
     {
-        return new ClientStorePropertyRaw(self::getStore(), self::getProperty(), $callback, $default);
+        return new ClientStorePropertyRaw($channel_id, self::getStore(), self::getProperty(), $callback, $default);
     }
 
-    public static function single($builder, string $resource)
+    /**
+     * @param int $channel_id
+     * @param $builder
+     * @param string $resource
+     * @return ClientStorePropertyRaw|ClientStorePropertyInterface
+     */
+    public static function single(int $channel_id, $builder, string $resource): ClientStorePropertySingle
     {
-        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource);
+        return new ClientStorePropertySingle($channel_id, self::getStore(), self::getProperty(), $builder, $resource);
     }
 
-    public static function collection($builder, string $resource = null, int $size = 50)
+    /**
+     * @param int $channel_id
+     * @param $builder
+     * @param string|null $resource
+     * @param int $size
+     * @return ClientStorePropertySingle
+     */
+    public static function collection(int $channel_id, $builder, string $resource = null, int $size = 50): ClientStorePropertyCollection
     {
-        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $size);
+        return new ClientStorePropertyCollection($channel_id, self::getStore(), self::getProperty(), $builder, $resource, $size);
     }
-
-    public static function singleFresh($builder, string $resource)
-    {
-        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource);
-    }
-
-    public static function collectionFresh($builder, string $resource, int $size = 50)
-    {
-        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $size);
-    }
-
+    
     private static function getStore(): string
     {
         $parts = explode('\\', static::class);

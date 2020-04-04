@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * Class ClientStorePropertyCollection
+ * @package Akceli\RealtimeClientStoreSync\ClientStore
+ * @mixin ClientStorePropertyInterface
+ */
 class ClientStorePropertyCollection implements ClientStorePropertyInterface
 {
     use ClientStorePropertyTrait;
@@ -19,6 +24,9 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
 
     /** @var string */
     private $property;
+
+    /** @var int  */
+    private $channel_id;
 
     private $model;
     private $created_method;
@@ -38,8 +46,9 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
      * @param $builder
      * @param int $size
      */
-    public function __construct(string $store, string $property, $builder, string $resource = null, int $size = null)
+    public function __construct(int $channel_id, string $store, string $property, $builder, string $resource = null, int $size = null)
     {
+        $this->channel_id = $channel_id;
         $this->store = $store;
         $this->property = $property;
         $this->resource = $resource ?? ClientStoreDefaultResource::class;
