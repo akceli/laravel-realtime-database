@@ -2,6 +2,7 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
+use Akceli\RealtimeClientStoreSync\PusherService\ClientStoreActions;
 use Akceli\RealtimeClientStoreSync\PusherService\PusherServiceEvent;
 use http\Exception\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,22 +12,24 @@ use Illuminate\Support\Str;
 
 class ClientStorePropertyCollection implements ClientStorePropertyInterface
 {
+    use ClientStorePropertyTrait;
+    
     /** @var string */
     private $store;
 
     /** @var string */
     private $property;
-    
-    private $created;
-    private $updated;
-    private $deleted;
+
+    private $model;
+    private $created_method;
+    private $updated_method;
+    private $deleted_method;
+    private $sendable = true;
 
     /** @var string */
     private $resource;
     private $builder;
     private $size;
-
-    const AcceptableEventValues = [ClientStoreService::CreatedEvent, ClientStoreService::UpdatedEvent, ClientStoreService::DeletedEvent, true, false];
 
     /**
      * PusherStoreCollection constructor.
@@ -35,45 +38,20 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
      * @param $builder
      * @param int $size
      */
-    public function __construct(string $store, string $property, $builder, string $resource = null, int $size = null, $created = true, $updated = true, $deleted = true)
+    public function __construct(string $store, string $property, $builder, string $resource = null, int $size = null)
     {
-        if (!in_array($created, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Created can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-        if (!in_array($updated, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Updated can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-        if (!in_array($deleted, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Deleted can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-        
         $this->store = $store;
         $this->property = $property;
-        $this->created = $created;
-        $this->updated = $updated;
-        $this->deleted = $deleted;
         $this->resource = $resource ?? ClientStoreDefaultResource::class;
         $this->builder = $builder;
         $this->size = $size ?? config('client-store.default_pagination_size');
     }
-    
-    public function getEventBehavior(int $pusherEvent)
-    {
-        if ($pusherEvent === PusherServiceEvent::Created) {
-            return ($this->created !== true) ?? ClientStoreService::CreatedEvent;
-        }
-        if ($pusherEvent === PusherServiceEvent::Updated) {
-            return ($this->updated !== true) ?? ClientStoreService::UpdatedEvent;
-        }
-        if ($pusherEvent === PusherServiceEvent::Deleted) {
-            return ($this->deleted !== true) ?? ClientStoreService::DeletedEvent;
-        }
 
-        throw new InvalidArgumentException('Only valid Pusher Envent Types are ' . json_encode([
-            PusherServiceEvent::Created,
-            PusherServiceEvent::Updated,
-            PusherServiceEvent::Deleted,
-        ]));
+    public function validateModelIsForStore($model)
+    {
+        if (get_class($this->getBuilder()->getModel()) !== get_class($model)) {
+            throw new \InvalidArgumentException(get_class($model) . ' is not the same model used in the builder ' . get_class($this->getBuilder()->getModel()) . " used in {$this->getStore()}.{$this->getProperty()}");
+        }
     }
 
     public function getStore(): string
@@ -88,7 +66,8 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
 
     public function getDataFromModel(Model $model)
     {
-        return (new $this->resource($model))->resolve();
+        $eagerLoads = array_keys($storeProperty->getBuilder()->getEagerLoads());
+        return (new $this->resource($model->load($eagerLoads)))->resolve();
     }
     
     public function getSingleData(int $id)

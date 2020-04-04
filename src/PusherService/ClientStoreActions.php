@@ -2,7 +2,7 @@
 
 namespace Akceli\RealtimeClientStoreSync\PusherService;
 
-class PusherServiceMethod
+class ClientStoreActions
 {
     const SetRoot = 'setRoot';
     const PatchRoot = 'updateRoot';
@@ -10,8 +10,9 @@ class PusherServiceMethod
     const AddToCollection = 'addToCollection';
     const RemoveFromCollection = 'removeFromCollection';
     const UpsertCollection = 'upsertCollection';
-
-    public static function UpsertCollection(bool $add_or_update)
+    const DoNothing = false;
+    
+    public static function UpsertOrRemoveFromCollection(bool $add_or_update)
     {
         return ($add_or_update) ? self::UpsertCollection : self::RemoveFromCollection;
     }

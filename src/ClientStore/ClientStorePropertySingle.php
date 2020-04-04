@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class ClientStorePropertySingle implements ClientStorePropertyInterface
 {
+    use ClientStorePropertyTrait;
+    
     /** @var string */
     private $store;
     
@@ -20,13 +22,13 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
     /** @var string  */
     private $resource;
 
-    private $created;
-    private $updated;
-    private $deleted;
-    
-    private $builder;
+    private $model;
+    private $created_method;
+    private $updated_method;
+    private $deleted_method;
+    private $sendable = true;
 
-    const AcceptableEventValues = [ClientStoreService::CreatedEvent, ClientStoreService::UpdatedEvent, ClientStoreService::DeletedEvent, true, false];
+    private $builder;
 
     /**
      * PusherStoreCollection constructor.
@@ -34,44 +36,19 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
      * @param string $resource
      * @param $builder
      */
-    public function __construct(string $store, string $property, $builder, string $resource = null, $created = true, $updated = true, $deleted = true)
+    public function __construct(string $store, string $property, $builder, string $resource = null)
     {
-        if (!in_array($created, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Created can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-        if (!in_array($updated, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Updated can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-        if (!in_array($deleted, self::AcceptableEventValues)) {
-            throw new InvalidArgumentException('Deleted can only contain ' . json_encode(self::AcceptableEventValues));
-        }
-
         $this->store = $store;
         $this->property = $property;
-        $this->created = $created;
-        $this->updated = $updated;
-        $this->deleted = $deleted;
         $this->resource = $resource ?? ClientStoreDefaultResource::class;
         $this->builder = $builder;
     }
 
-    public function getEventBehavior(int $pusherEvent)
+    public function validateModelIsForStore($model)
     {
-        if ($pusherEvent === PusherServiceEvent::Created) {
-            return ($this->created !== true) ?? ClientStoreService::CreatedEvent;
+        if (get_class($this->getBuilder()->getModel()) !== get_class($model)) {
+            throw new \InvalidArgumentException(get_class($model) . ' is not the same model used in the builder ' . get_class($this->getBuilder()->getModel()) . " used in {$this->getStore()}.{$this->getProperty()}");
         }
-        if ($pusherEvent === PusherServiceEvent::Updated) {
-            return ($this->updated !== true) ?? ClientStoreService::UpdatedEvent;
-        }
-        if ($pusherEvent === PusherServiceEvent::Deleted) {
-            return ($this->deleted !== true) ?? ClientStoreService::DeletedEvent;
-        }
-
-        throw new InvalidArgumentException('Only valid Pusher Envent Types are ' . json_encode([
-                PusherServiceEvent::Created,
-                PusherServiceEvent::Updated,
-                PusherServiceEvent::Deleted,
-            ]));
     }
 
     public function getStore(): string
@@ -86,7 +63,8 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
 
     public function getDataFromModel(Model $model)
     {
-        return (new $this->resource($model))->resolve();
+        $eagerLoads = array_keys($storeProperty->getBuilder()->getEagerLoads());
+        return (new $this->resource($model->load($eagerLoads)))->resolve();
     }
 
     public function getSingleData(int $id)

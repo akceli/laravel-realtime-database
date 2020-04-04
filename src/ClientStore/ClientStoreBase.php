@@ -28,29 +28,29 @@ class ClientStoreBase
         return $properties;
     }
 
-    public static function raw($callback, $default = null, $created = true, $updated = true, $deleted = true)
+    public static function raw($callback, $default = null)
     {
-        return new ClientStorePropertyRaw(self::getStore(), self::getProperty(), $callback, $default, $created, $updated, $deleted);
+        return new ClientStorePropertyRaw(self::getStore(), self::getProperty(), $callback, $default);
     }
 
-    public static function single($builder, string $resource, $created = 'created', $updated = 'updated', $deleted = 'deleted')
+    public static function single($builder, string $resource)
     {
-        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource, $created, $updated, $deleted);
+        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource);
     }
 
-    public static function collection($builder, string $resource, $created = 'created', $updated = 'updated', $deleted = 'deleted')
+    public static function collection($builder, string $resource = null, int $size = 50)
     {
-        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $created, $updated, $deleted);
+        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $size);
     }
 
-    public static function singleFresh($builder, string $resource, $created = true, $updated = true, $deleted = true)
+    public static function singleFresh($builder, string $resource)
     {
-        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource, $created, $updated, $deleted);
+        return new ClientStorePropertySingle(self::getStore(), self::getProperty(), $builder, $resource);
     }
 
-    public static function collectionFresh($builder, string $resource, $created = true, $updated = true, $deleted = true)
+    public static function collectionFresh($builder, string $resource, int $size = 50)
     {
-        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $created, $updated, $deleted);
+        return new ClientStorePropertyCollection(self::getStore(), self::getProperty(), $builder, $resource, $size);
     }
 
     private static function getStore(): string
