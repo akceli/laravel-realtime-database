@@ -11,8 +11,8 @@ class ClientStoreController extends Controller
 {
     public static function apiRoutes()
     {
-        Route::get('{store}/{store_id}/{property?}/{id?}', function (Request $request, string $store, int $store_id = null, string $property = null, int $id = null) {
-            return self::prepareStore($request, ClientStoreService::getStore($store, $store_id), $property, $id);
+        Route::get('{store}/{store_id}/{property?}/{id?}', function (Request $request, string $store, $store_id = null, string $property = null, int $id = null) {
+            return self::prepareStore($request, ClientStoreService::getStore($store, (int) $store_id), $property, $id);
         });
     }
     

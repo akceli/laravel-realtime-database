@@ -23,16 +23,10 @@ class ClientStoreDefaultResource extends JsonResource
      */
     public function toArray($request)
     {
+        if (is_array($this->resource)) {
+            return $this->resource;
+        }
+
         return $this->resource->toArray();
-//        return [
-//            'id' => $this->resource->id,
-//            'name' => $this->resource->name,
-//            'email' => $this->resource->email,
-//            'email_verified_at' => $this->resource->email_verified_at,
-//            'password' => $this->resource->password,
-//            'remember_token' => $this->resource->remember_token,
-//            'created_at' => $this->resource->created_at,
-//            'updated_at' => $this->resource->updated_at,
-//        ];
     }
 }

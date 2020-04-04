@@ -4,10 +4,17 @@ namespace Akceli\RealtimeClientStoreSync\PusherService;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyCollection;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyInterface;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertyRaw;
+use Akceli\RealtimeClientStoreSync\ClientStore\ClientStorePropertySingle;
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreService;
+use App\ClientStores\MarketStore;
+use App\Events\UpdateClientEvent;
 use App\User;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Resources\Json\Resource;
 
 class PusherService
 {
@@ -24,7 +31,8 @@ class PusherService
         if (PusherServiceEvent::Updated > $currentState) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Updated,
-                'store_locations' => self::mapStoreLocations($model)
+                'store_properties' => $model->getStoreProperties(),
+                'model' => $model,
             ];
         }
     }
@@ -39,7 +47,8 @@ class PusherService
         if (PusherServiceEvent::Created > $currentState) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Created,
-                'store_locations' => self::mapStoreLocations($model)
+                'store_properties' => $model->getStoreProperties(),
+                'model' => $model,
             ];
         }
     }
@@ -54,19 +63,10 @@ class PusherService
         if (PusherServiceEvent::Deleted > $currentState) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Deleted,
-                'store_locations' => self::mapStoreLocations($model)
+                'store_properties' => $model->getStoreProperties(),
+                'model' => $model,
             ];
         }
-    }
-
-    public static function mapStoreLocations(Model $model)
-    {
-        return array_map(function ($location) use ($model) {
-            return [
-                'location' => explode(':', $location)[0],
-                'channel_id' => $model[explode(':', $location)[1] ?? config('client-store.default_store_id')]
-            ];
-        }, $model->store_locations ?? []);
     }
 
     public static function getQueue()
@@ -79,29 +79,89 @@ class PusherService
         foreach (self::getQueue() as $identifier => $change_data) {
             $change_type = $change_data['type'];
             $locations = $change_data['store_locations'];
+            $cachedModel = $change_data['model'];
             $parts = explode(':', $identifier);
             $id = $parts[0];
             $class = $parts[1];
 
-            foreach ($locations as $info) {
-                $location = $info['location'];
-                $channel_id = $info['channel_id'];
-                $store = explode('.', $location)[0];
-                $prop = explode('.', $location)[1];
-
-                $clientStore = ClientStoreService::getStore($store, $channel_id)[$prop];
-                $model = $clientStore->getSingleData($id);
-
-                if ($clientStore instanceof ClientStorePropertyCollection) {
-                    if ($model instanceof Model) {
-                        PusherService::UpsertCollection($location, $channel_id, $model, (bool) $model);
-                    } else {
-                        PusherService::RemoveFromCollection($location, $channel_id, $id);
+            /** @var ClientStorePropertyInterface $storeProperty */
+            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
+                if ($eventBehavior = $storeProperty->getEventBehavior($change_type)) {
+                    $eagerLoads = array_keys($storeProperty->getBuilder()->getEagerLoads());
+                    
+                    /** Default behavior */
+                    if ($eventBehavior === true) {
+                        if ($storeProperty instanceof ClientStorePropertyCollection) {
+                            if ($model = $storeProperty->getBuilder()->find($id)) {
+                                PusherService::UpsertCollection($storeProperty, $channel_id, $model);
+                            } else {
+                                PusherService::RemoveFromCollection($storeProperty, $channel_id, $id);
+                            }
+                        } elseif ($storeProperty instanceof ClientStorePropertySingle) {
+                            $model = $storeProperty->getBuilder()->find($id);
+                            PusherService::SetRoot($storeProperty, $channel_id, $model);
+                        } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
+                            PusherService::SetRoot($storeProperty, $channel_id);
+                        }
                     }
-                } else {
-                    PusherService::SetRoot($location, $channel_id, $model);
+
+                    /**
+                     * Need to load in stuff for the cached models
+                     */
+
+                    if ($eventBehavior === ClientStoreService::CreatedEvent) {
+                        if ($storeProperty instanceof ClientStorePropertyCollection) {
+                            PusherService::UpsertCollection($storeProperty, $channel_id, $cachedModel);
+                        } elseif ($storeProperty instanceof ClientStorePropertySingle) {
+                            PusherService::SetRoot($storeProperty, $channel_id, $cachedModel);
+                        } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
+                            PusherService::SetRoot($storeProperty, $channel_id);
+                        }
+                    }
+                    if ($eventBehavior === ClientStoreService::UpdatedEvent) {
+                        if ($storeProperty instanceof ClientStorePropertyCollection) {
+                            PusherService::UpdateInCollection($storeProperty, $channel_id, $cachedModel);
+                        } elseif ($storeProperty instanceof ClientStorePropertySingle) {
+                            PusherService::SetRoot($storeProperty, $channel_id, $cachedModel);
+                        } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
+                            PusherService::SetRoot($storeProperty, $channel_id);
+                        }
+                    }
+                    if ($eventBehavior === ClientStoreService::DeletedEvent) {
+                        if ($storeProperty instanceof ClientStorePropertyCollection) {
+                            PusherService::RemoveFromCollection($storeProperty, $channel_id, $cachedModel->id);
+                        } elseif ($storeProperty instanceof ClientStorePropertySingle) {
+                            PusherService::SetRoot($storeProperty, $channel_id, $cachedModel);
+                        } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
+                            PusherService::SetRoot($storeProperty, $channel_id);
+                        }
+                    }
                 }
             }
+//            
+//            
+//            
+//            
+//            
+//            
+//            
+//            /** @var ClientStorePropertyInterface $storeProperty */
+//            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
+//                if ($eventBehavior = $storeProperty->getEventBehavior($change_type)) {
+//                    if ($storeProperty instanceof ClientStorePropertyCollection) {
+//                        if ($model = $storeProperty->getBuilder()->find($id)) {
+//                            PusherService::UpsertCollection($storeProperty, $channel_id, $model);
+//                        } else {
+//                            PusherService::RemoveFromCollection($storeProperty, $channel_id, $id);
+//                        }
+//                    } elseif ($storeProperty instanceof ClientStorePropertySingle) {
+//                        $model = $storeProperty->getBuilder()->find($id);
+//                        PusherService::SetRoot($storeProperty, $channel_id, $model);
+//                    } elseif ($storeProperty instanceof ClientStorePropertyRaw) {
+//                        PusherService::SetRoot($storeProperty, $channel_id);
+//                    }
+//                }
+//            }
         }
 
         self::clearQueue();
@@ -141,13 +201,13 @@ class PusherService
      * @param int $delay
      * @throws \Exception
      */
-    public static function broadcastEvent(string $channel, string $store, string $prop, string $method, array $data, string $apiCall = null, int $delay = 0)
+    public static function broadcastEvent(string $channel_id, string $store, string $prop, string $method, array $data, string $apiCall = null, int $delay = 0)
     {
         $payload = [
             'store' => $store,
             'prop' => $prop,
             'method' => $method,
-            'channel' => $channel,
+            'channel_id' => $channel_id,
             'data' => $data,
             'api_call' => $apiCall,
             'delay' => $delay
@@ -164,7 +224,7 @@ class PusherService
                 $payload['data'] = null;
             } elseif ($id = $data['id'] ?? null) {
                 $payload['data'] = null;
-                $payload['api_call'] = "client_store/{$store}/{$prop}/{$id}";
+                $payload['api_call'] = "new-store/{$store}/{$prop}/{$id}";
             } else {
                 throw new \Exception(json_encode([
                     'Message' => 'Exceeding pusher limit, and not fallback was provided',
@@ -174,77 +234,71 @@ class PusherService
             }
         }
 
-        return;
         event(new UpdateClientEvent($payload, 'event', [
             new Channel($channel),
         ]));
     }
 
-    public static function UpsertCollection(string $storeProp, int $store_id, Model $model, bool $add_or_update = true)
+    public static function UpsertCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model, bool $add_or_update = true)
     {
-        $store = explode('.', $storeProp)[0];
-        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
-            $store. '.' . $store_id,
-            $store,
-            $property,
+            $channel_id,
+            $storeProp->getStore(),
+            $storeProp->getProperty(),
             PusherServiceMethod::UpsertCollection($add_or_update),
-            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            $storeProp->getDataFromModel($model)
         );
     }
 
-    public static function UpdateInCollection(string $storeProp, int $store_id, Model $model)
+    public static function UpdateInCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model)
     {
-        $store = explode('.', $storeProp)[0];
-        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
-            $store. '.' . $store_id,
-            $store,
-            $property,
+            $channel_id,
+            $storeProp->getStore(),
+            $storeProp->getProperty(),
             PusherServiceMethod::UpdateInCollection,
-            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            $storeProp->getDataFromModel($model)
         );
     }
 
-    public static function AddToCollection(string $storeProp, int $store_id, Model $model)
+    public static function AddToCollection(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model)
     {
-        $store = explode('.', $storeProp)[0];
-        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
-            $store. '.' . $store_id,
-            $store,
-            $property,
+            $channel_id,
+            $storeProp->getStore(),
+            $storeProp->getProperty(),
             PusherServiceMethod::AddToCollection,
-            ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model)
+            $storeProp->getDataFromModel($model)
         );
     }
 
-    public static function SetRoot(string $storeProp, int $store_id, Model $model = null)
+    public static function SetRoot(ClientStorePropertyInterface $storeProp, int $channel_id, Model $model = null)
     {
-        $store = explode('.', $storeProp)[0];
-        $property = explode('.', $storeProp)[1];
-        if (is_null($model)) {
-            $data = ClientStoreController::prepareStore(null, ClientStoreService::getStore($store, $store_id), $property)->toArray();
+        $store = $storeProp->getStore();
+        $property = $storeProp->getProperty();
+        if ($model) {
+            $data = $storeProp->getDataFromModel($model);
         } else {
-            $data = ClientStoreService::getStore($store, $store_id)[$property]->getDataFromModel($model);
+            $data = $storeProp->getData();
+            if ($data instanceof Resource) {
+                $data = $data->resolve();
+            }
         }
         PusherService::broadcastEvent(
-            $store. '.' . $store_id,
-            $store,
-            $property,
+            $channel_id,
+            $storeProp->getStore(),
+            $storeProp->getProperty(),
             PusherServiceMethod::SetRoot,
             $data
         );
     }
 
-    public static function RemoveFromCollection(string $storeProp, int $store_id, int $id)
+    public static function RemoveFromCollection(ClientStorePropertyInterface $storeProp, int $channel_id, int $id)
     {
-        $store = explode('.', $storeProp)[0];
-        $property = explode('.', $storeProp)[1];
         PusherService::broadcastEvent(
-            $store. '.' . $store_id,
-            $store,
-            $property,
+            $channel_id,
+            $storeProp->getStore(),
+            $storeProp->getProperty(),
             PusherServiceMethod::RemoveFromCollection,
             ['id' => $id]
         );

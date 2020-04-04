@@ -6,6 +6,7 @@ use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class FlushPusherQueueMiddleware.
@@ -39,10 +40,20 @@ class FlushClientStoreChangesMiddleware
         $content = json_decode($response->getContent(), true);
         $content = (json_last_error() == JSON_ERROR_NONE) ? $content : $response->getContent();
 
-        $response->setContent(json_encode([
+        if (env('APP_ENV') === 'local') {
+            DB::enableQueryLog();
+        }
+        
+        $data = [
             'responseData' => $content,
-            'clientStoreChanges' => PusherService::flushQueue()
-        ]));
+            'clientStoreChanges' => PusherService::flushQueue(),
+        ];
+        
+        if (env('APP_ENV') === 'local') {
+            $data['pusherDataSyncQueries'] =  DB::getQueryLog();
+        }
+        
+        $response->setContent(json_encode($data));
 
         return $response;
     }
