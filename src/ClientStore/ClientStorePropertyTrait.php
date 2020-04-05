@@ -28,7 +28,17 @@ trait ClientStorePropertyTrait
 
         return $this;
     }
-    
+
+    public function setDirty(array $dirty_attributes = [])
+    {
+        $this->dirty_attributes = $dirty_attributes;
+    }
+
+    public function getDirty(): array
+    {
+        return $this->dirty_attributes;
+    }
+
     public function getModel()
     {
         return $this->model;
@@ -117,6 +127,12 @@ trait ClientStorePropertyTrait
         return $this;
     }
 
+    public function onlyIfDirty(array $attributes = []): ClientStorePropertyInterface
+    {
+        $this->onlyIf((bool) count(array_intersect($attributes, $this->dirty_attributes ?? [])));
+        return $this;
+    }
+
     public function isSendable(): bool {
         return $this->sendable;
     }
@@ -124,7 +140,7 @@ trait ClientStorePropertyTrait
     public function isNotSendable(): bool {
         return !$this->sendable;
     }
-    
+
     public function broadcast($client_store_action)
     {
         if (!in_array($client_store_action, self::validClientStoreActions())) {

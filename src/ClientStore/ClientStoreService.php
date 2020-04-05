@@ -2,6 +2,7 @@
 
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
+use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
@@ -64,5 +65,14 @@ class ClientStoreService
             $model_name = explode(': ', $event);
             $model_id = $data[0]->id;
         });
+    }
+    
+    public static function ignoreChanges(callable $callback)
+    {
+        PusherService::disableTracking();
+        
+        $callback();
+        
+        PusherService::enableTracking();
     }
 }

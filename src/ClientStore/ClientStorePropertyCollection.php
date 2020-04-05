@@ -29,6 +29,7 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
     private $channel_id;
 
     private $model;
+    private $dirty_attributes;
     private $created_method;
     private $updated_method;
     private $deleted_method;

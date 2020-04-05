@@ -31,6 +31,7 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
     private $resource;
 
     private $model;
+    private $dirty_attributes;
     private $created_method;
     private $updated_method;
     private $deleted_method;

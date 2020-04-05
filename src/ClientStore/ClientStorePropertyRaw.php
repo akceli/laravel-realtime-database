@@ -27,6 +27,7 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
     /** @var int  */
     private $channel_id;
 
+    private $dirty_attributes;
     private $created_method;
     private $updated_method;
     private $deleted_method;
@@ -75,7 +76,10 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
     public function getData(Request $request = null)
     {
         $data = $this->data;
-        return $data();
+        if (is_string($data)) {
+            $data = $data();
+        }
+        return $data;
     }
 
     public function getDefaultData()

@@ -12,6 +12,17 @@ use Illuminate\Support\Str;
 interface ClientStorePropertyInterface
 {
     /**
+     * @param array $dirty_attributes
+     * @return mixed
+     */
+    public function setDirty(array $dirty_attributes = []);
+
+    /**
+     * @return array
+     */
+    public function getDirty(): array;
+
+    /**
      * @return string
      */
     public function getStore(): string;
@@ -86,6 +97,13 @@ interface ClientStorePropertyInterface
      * @return ClientStorePropertyInterface
      */
     public function onlyIf(bool $sendable): ClientStorePropertyInterface;
+
+
+    /**
+     * @param array $attributes
+     * @return ClientStorePropertyInterface
+     */
+    public function onlyIfDirty(array $attributes = []): ClientStorePropertyInterface;
 
     /**
      * @return bool

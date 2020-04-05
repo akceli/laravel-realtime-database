@@ -47,6 +47,7 @@ class FlushClientStoreChangesMiddleware
         $data = [
             'responseData' => $content,
             'clientStoreChanges' => PusherService::flushQueue(),
+            'changes' => PusherService::$processedChanges,
         ];
         
         if (env('APP_ENV') === 'local') {

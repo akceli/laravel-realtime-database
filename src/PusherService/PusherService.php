@@ -18,14 +18,29 @@ use Illuminate\Http\Resources\Json\Resource;
 class PusherService
 {
     private static $queue = [];
-    private static $processedChannels = [];
+    public static $processedChanges = [];
     private static $responseContent = [];
+    public static $tracking = true;
+    
+    public static function disableTracking()
+    {
+        self::$tracking = false;
+    }
+    
+    public static function enableTracking()
+    {
+        self::$tracking = true;
+    }
 
     /**
      * @param model $model
      */
     public static function updated(model $model)
     {
+        if (!self::$tracking) {
+            return;
+        }
+
         $class_name = get_class($model);
         $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Updated > $current_state) {
@@ -33,6 +48,7 @@ class PusherService
                 'type' => PusherServiceEvent::Updated,
                 'store_properties' => $model->getStoreProperties(),
                 'model' => $model,
+                'dirty_attributes' => $model->getDirty()
             ];
         }
     }
@@ -40,8 +56,12 @@ class PusherService
     /**
      * @param model $model
      */
-    public static function created(model $model)
+    public static function created(model $model, array $dirty = [])
     {
+        if (!self::$tracking) {
+            return;
+        }
+
         $class_name = get_class($model);
         $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Created > $current_state) {
@@ -49,6 +69,7 @@ class PusherService
                 'type' => PusherServiceEvent::Created,
                 'store_properties' => $model->getStoreProperties(),
                 'model' => $model,
+                'dirty_attributes' => $dirty
             ];
         }
     }
@@ -58,6 +79,10 @@ class PusherService
      */
     public static function deleted(model $model)
     {
+        if (!self::$tracking) {
+            return;
+        }
+
         $class_name = get_class($model);
         $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
         if (PusherServiceEvent::Deleted > $current_state) {
@@ -65,6 +90,7 @@ class PusherService
                 'type' => PusherServiceEvent::Deleted,
                 'store_properties' => $model->getStoreProperties(),
                 'model' => $model,
+                'dirty_attributes' => $model->getDirty()
             ];
         }
     }
@@ -79,10 +105,25 @@ class PusherService
         foreach (self::getQueue() as $identifier => $change_data) {
             $change_type = $change_data['type'];
             $cachedmodel = $change_data['model'];
+            $dirty_attributes = $change_data['dirty_attributes'];
             $id = explode(':', $identifier)[0];
 
             /** @var ClientStorePropertyInterface $storeProperty */
-            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
+            foreach (array_reverse($change_data['store_properties']) ?? [] as $storeProperty) {
+//            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
+                $storeProperty->setDirty($dirty_attributes);
+                $changes = $storeProperty->getStore() .'.'. $storeProperty->getProperty() .'.'. $storeProperty->getChannelId() .'.'. $id;
+
+                /**
+                 * If channel already processed dont re process it
+                 */
+                if (self::$processedChanges[$changes] ?? false) {
+                    self::$processedChanges[$changes . 'duplicated'] = true;
+                    continue;
+                } else {
+                    self::$processedChanges[$changes] = true;
+                }
+
                 /**
                  * if not sendable then skip
                  */
