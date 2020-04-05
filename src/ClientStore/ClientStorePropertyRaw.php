@@ -61,7 +61,12 @@ class ClientStorePropertyRaw implements ClientStorePropertyInterface
         return $this->property;
     }
 
-    public function getDataFromModel(Model $model)
+    public function getModel()
+    {
+        return null;
+    }
+
+    public function getDataFromModel(Model $model = null)
     {
         $data = $this->data;
         return $data();

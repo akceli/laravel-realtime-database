@@ -19,7 +19,7 @@ class ClientStoreService
     public static function getStore($store, int $store_id): array
     {
         $stores = self::getStores($store_id);
-        
+
         if (in_array($store, array_keys($stores))) {
             return $stores[$store];
         } else {

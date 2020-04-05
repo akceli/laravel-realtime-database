@@ -36,7 +36,7 @@ class ClientStoreBase
      */
     public static function raw(int $channel_id, $callback, $default = null): ClientStorePropertyRaw
     {
-        return new ClientStorePropertyRaw($channel_id, self::getStore(), self::getProperty(), $callback, $default);
+        return new ClientStorePropertyRaw($channel_id, self::getStore(), self::getPropertyOfCalledMethod(), $callback, $default);
     }
 
     /**
@@ -47,7 +47,7 @@ class ClientStoreBase
      */
     public static function single(int $channel_id, $builder, string $resource): ClientStorePropertySingle
     {
-        return new ClientStorePropertySingle($channel_id, self::getStore(), self::getProperty(), $builder, $resource);
+        return new ClientStorePropertySingle($channel_id, self::getStore(), self::getPropertyOfCalledMethod(), $builder, $resource);
     }
 
     /**
@@ -59,7 +59,7 @@ class ClientStoreBase
      */
     public static function collection(int $channel_id, $builder, string $resource = null, int $size = 50): ClientStorePropertyCollection
     {
-        return new ClientStorePropertyCollection($channel_id, self::getStore(), self::getProperty(), $builder, $resource, $size);
+        return new ClientStorePropertyCollection($channel_id, self::getStore(), self::getPropertyOfCalledMethod(), $builder, $resource, $size);
     }
     
     private static function getStore(): string
@@ -69,7 +69,7 @@ class ClientStoreBase
         return Str::camel(substr($store, 0, -5));
     }
 
-    private static function getProperty(): string
+    private static function getPropertyOfCalledMethod(): string
     {
         return substr((new \Exception())->getTrace()[2]['function'], 0, -8);
     }
