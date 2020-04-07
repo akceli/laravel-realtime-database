@@ -5,7 +5,9 @@ namespace Akceli\RealtimeClientStoreSync\ClientStore;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\Resource;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ClientStoreController extends Controller
 {
@@ -39,17 +41,24 @@ class ClientStoreController extends Controller
         $with = $request->get('with');
         if (empty($with)) {
             $with = array_keys($store);
+        } else {
+            $with = explode(',', $with);
         }
 
         $response = [];
         foreach ($store as $prop => $pusherStore) {
             if (in_array($prop, $with)) {
-                $response[$prop] =  $pusherStore->getData($request);
-            } else {
-                /** Default to not include defaults when using $with */
-                if (!$request->get('include_defaults', false)) {
-                    $response[$prop] =  $pusherStore->getDefaultData();
+                $data = $pusherStore->getData($request);
+                if ($data instanceof AnonymousResourceCollection) {
+                    $data =  $data->toResponse($request)->getData();
                 }
+                $response[$prop] =  $data;
+            } else {
+                $data = $pusherStore->getDefaultData();
+                if ($data instanceof AnonymousResourceCollection) {
+                    $data =  $data->toResponse($request)->getData();
+                }
+                $response[$prop] =  $data;
             }
         }
 

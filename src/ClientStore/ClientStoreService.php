@@ -3,6 +3,7 @@
 namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use Akceli\RealtimeClientStoreSync\PusherService\PusherService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,7 @@ class ClientStoreService
      */
     public static function getStore($store, int $store_id): array
     {
-        $stores = self::getStores($store_id);
+        $stores =  self::getStores($store_id);
 
         if (in_array($store, array_keys($stores))) {
             return $stores[$store];
@@ -51,22 +52,32 @@ class ClientStoreService
         return $stores;
     }
 
-    public static function boot()
+//    public static function boot()
+//    {
+//        Event::listen('eloquent.created: *', function($event, $data) {
+//            $model_name = explode(': ', $event);
+//            $model_id = $data[0]->id;
+//        });
+//        Event::listen('eloquent.updated: *', function($event, $data) {
+//            $model_name = explode(': ', $event);
+//            $model_id = $data[0]->id;
+//        });
+//        Event::listen('eloquent.deleted: *', function($event, $data) {
+//            $model_name = explode(': ', $event);
+//            $model_id = $data[0]->id;
+//        });
+//    }
+
+    public static function disableTracking()
     {
-        Event::listen('eloquent.created: *', function($event, $data) {
-            $model_name = explode(': ', $event);
-            $model_id = $data[0]->id;
-        });
-        Event::listen('eloquent.updated: *', function($event, $data) {
-            $model_name = explode(': ', $event);
-            $model_id = $data[0]->id;
-        });
-        Event::listen('eloquent.deleted: *', function($event, $data) {
-            $model_name = explode(': ', $event);
-            $model_id = $data[0]->id;
-        });
+        PusherService::disableTracking();
     }
-    
+
+    public static function enableTracking()
+    {
+        PusherService::enableTracking();
+    }
+
     public static function ignoreChanges(callable $callback)
     {
         PusherService::disableTracking();

@@ -89,13 +89,13 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
     {
         $size = $request->get('size', $this->size);
         $page = $request->get('page');
-        $total = $request->get('total');
+        $offset = $request->get('offset');
         $after = $request->get('after');
         $after_column = $request->get('after_column', 'id');
         if ($after) {
             $collection = $this->getBuilder()->forPageAfterId($size, $after, $after_column)->paginate($size);
-        } elseif ($total) {
-            $collection = $this->getBuilder()->skip($total)->take($size)->get();
+        } elseif ($offset) {
+            $collection = $this->getBuilder()->skip($offset)->take($size)->get();
         } else {
             $collection = $this->getBuilder()->paginate($size, '*', 'page', $page);
         }
@@ -105,7 +105,7 @@ class ClientStorePropertyCollection implements ClientStorePropertyInterface
 
     public function getDefaultData()
     {
-        return [];
+        return $this->resource::collection(collect([]));
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Akceli\RealtimeClientStoreSync\ClientStore;
 
 use App\ClientStore\ClientStore;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
@@ -27,7 +28,7 @@ class ClientStoreBase
 
         return $properties;
     }
-
+    
     /**
      * @param int $channel_id
      * @param $callback
