@@ -46,7 +46,7 @@ class ClientStoreBase
      * @param string $resource
      * @return ClientStorePropertyRaw|ClientStorePropertyInterface
      */
-    public static function single(int $channel_id, $builder, string $resource): ClientStorePropertySingle
+    public static function single(int $channel_id, $builder, string $resource = null): ClientStorePropertySingle
     {
         return new ClientStorePropertySingle($channel_id, self::getStore(), self::getPropertyOfCalledMethod(), $builder, $resource);
     }
