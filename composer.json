@@ -1,5 +1,5 @@
 {
-    "name": "akceli/realtime-client-store-sync",
+    "name": "akceli/laravel-realtime-database",
     "description": "Keep your client store in sync with middleware.  No more manually keeping the store in sync with every api call, also leverages pusher so the same middleware can keep all clients up to date",
     "license": "MIT",
     "authors": [

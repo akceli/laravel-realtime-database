@@ -33,9 +33,9 @@ class PusherService
     }
 
     /**
-     * @param model $model
+     * @param Model $model
      */
-    public static function updated(model $model)
+    public static function updated(Model $model)
     {
         if (!self::$tracking) {
             return;
@@ -54,9 +54,9 @@ class PusherService
     }
 
     /**
-     * @param model $model
+     * @param Model $model
      */
-    public static function created(model $model, array $dirty = [])
+    public static function created(Model $model, array $dirty = [])
     {
         if (!self::$tracking) {
             return;
@@ -75,9 +75,9 @@ class PusherService
     }
 
     /**
-     * @param model $model
+     * @param Model $model
      */
-    public static function deleted(model $model)
+    public static function deleted(Model $model)
     {
         if (!self::$tracking) {
             return;
@@ -110,9 +110,8 @@ class PusherService
 
             /** @var ClientStorePropertyInterface $storeProperty */
             foreach (array_reverse($change_data['store_properties']) ?? [] as $storeProperty) {
-//            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
                 $storeProperty->setDirty($dirty_attributes);
-                $changes = $storeProperty->getStore() .'.'. $storeProperty->getProperty() .'.'. $storeProperty->getChannelId() .'.'. $id;
+                $changes = $storeProperty->getStore() .'.'. $storeProperty->getChannelId() .'.'. $storeProperty->getProperty() .'.'. $id;
 
                 /**
                  * If channel already processed dont re process it
@@ -130,15 +129,17 @@ class PusherService
                 if ($storeProperty->isNotSendable()) {
                     continue;
                 }
-
+                
                 if ($model = $storeProperty->getModel()) {
                     /**
                      * if model is set the use the event behavior to determine the
                      */
-                    PusherService::broadcastStoreEvent(
-                        $storeProperty,
-                        $storeProperty->getEventBehavior($change_type)
-                    );
+                    if ($method = $storeProperty->getEventBehavior($change_type)) {
+                        PusherService::broadcastStoreEvent(
+                            $storeProperty,
+                            $method
+                        );
+                    }
                 } else {
                     /**
                      * should only leverage this if the model is the same as the eloquen query builder model
@@ -166,7 +167,7 @@ class PusherService
         return self::$responseContent;
     }
 
-    public static function getModel(string $class): model
+    public static function getModel(string $class): Model
     {
         return $class::getModel();
     }
