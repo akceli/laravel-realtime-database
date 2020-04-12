@@ -9,10 +9,14 @@ class UpdateClientEvent implements ShouldBroadcast
 {
     use SerializesModels;
 
-    public array $data;
-    private array $channels;
-    private string $event;
-    public string $broadcastQueue = 'pusher';
+    /** @var array  */
+    public $data;
+    /** @var array  */
+    private $channels;
+    /** @var string  */
+    private $event;
+    /** @var string  */
+    public $broadcastQueue = 'pusher';
 
     /**
      * PipelineUpdatedEvent constructor.
