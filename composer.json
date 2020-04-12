@@ -20,7 +20,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "nightly-dev"
+            "dev-master": "0.0-dev"
         },
         "laravel": {
             "providers": [
