@@ -20,8 +20,11 @@ trait ClientStoreModelTrait
 
         if ($exists) {
             PusherService::updated($this);
+            $result = parent::save($options);
         } else {
-            PusherService::created($this);
+            $dirty = $this->getDirty();
+            $result = parent::save($options);
+            PusherService::created($this, $dirty);
         }
 
         return $result;
