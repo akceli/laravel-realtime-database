@@ -19,12 +19,18 @@ trait ClientStorePropertyTrait
     {
         $this->model = $model;
 
+        if ($this instanceof ClientStorePropertyCollection) {
+            $defaultMethod = ClientStoreActions::UpsertOrRemoveFromCollection($upsert);
+        } else {
+            $defaultMethod = ClientStoreActions::SetRoot;
+        }
+
         /**
          * set the actions if they are not already set
          */
-        $this->created_method = $this->created_method ?? ClientStoreActions::UpsertOrRemoveFromCollection($upsert);
-        $this->updated_method = $this->updated_method ?? ClientStoreActions::UpsertOrRemoveFromCollection($upsert);
-        $this->deleted_method = $this->deleted_method ?? ClientStoreActions::UpsertOrRemoveFromCollection($upsert);
+        $this->created_method = $this->created_method ?? $defaultMethod;
+        $this->updated_method = $this->updated_method ?? $defaultMethod;
+        $this->deleted_method = $this->deleted_method ?? $defaultMethod;
 
         return $this;
     }
@@ -43,7 +49,7 @@ trait ClientStorePropertyTrait
     {
         return $this->model;
     }
-    
+
     public function getChannelId(): int
     {
         return $this->channel_id;
@@ -67,19 +73,23 @@ trait ClientStorePropertyTrait
             throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
         }
 
-        $this->created_method = $client_store_action;
-        $this->updated_method = $client_store_action;
-        $this->deleted_method = $client_store_action;
+        if ($this instanceof ClientStorePropertyCollection) {
+            $this->created_method = $client_store_action;
+            $this->updated_method = $client_store_action;
+            $this->deleted_method = $client_store_action;
+        }
         return $this;
     }
-    
+
     public function setCreatedAction($client_store_action): ClientStorePropertyInterface
     {
         if (!in_array($client_store_action, self::validClientStoreActions())) {
             throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
         }
-        
-        $this->created_method = $client_store_action;
+
+        if ($this instanceof ClientStorePropertyCollection) {
+            $this->created_method = $client_store_action;
+        }
         return $this;
     }
 
@@ -89,7 +99,9 @@ trait ClientStorePropertyTrait
             throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
         }
 
-        $this->created_method = $client_store_action;
+        if ($this instanceof ClientStorePropertyCollection) {
+            $this->updated_method = $client_store_action;
+        }
         return $this;
     }
     public function setDeletedAction($client_store_action): ClientStorePropertyInterface
@@ -98,7 +110,9 @@ trait ClientStorePropertyTrait
             throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
         }
 
-        $this->created_method = $client_store_action;
+        if ($this instanceof ClientStorePropertyCollection) {
+            $this->deleted_method = $client_store_action;
+        }
         return $this;
     }
 
@@ -120,7 +134,7 @@ trait ClientStorePropertyTrait
                 PusherServiceEvent::Deleted,
             ]));
     }
-    
+
     public function onlyIf(bool $sendable): ClientStorePropertyInterface
     {
         $this->sendable = $sendable;
@@ -146,37 +160,37 @@ trait ClientStorePropertyTrait
         if (!in_array($client_store_action, self::validClientStoreActions())) {
             throw new \Exception('Valid Client Store Actions are ' . json_encode(self::validClientStoreActions()));
         }
-        
+
         if ($client_store_action === false) {
             return;
         }
-        
+
         PusherService::broadcastStoreEvent(
-            $storeProperty,
-            $client_store_action,
+            $this,
+            $client_store_action
         );
     }
 
     public function broadcastSetRoot()
     {
-        PusherService::broadcastStoreEvent($storeProperty, ClientStoreActions::SetRoot);
+        PusherService::broadcastStoreEvent($this, ClientStoreActions::SetRoot);
     }
 
     public function broadcastUpdateInCollection()
     {
         PusherService::broadcastStoreEvent($this, ClientStoreActions::UpdateInCollection);
     }
-    
+
     public function broadcastAddToCollection()
     {
         PusherService::broadcastStoreEvent($this, ClientStoreActions::AddToCollection);
     }
-    
+
     public function broadcastRemoveFromCollection()
     {
         PusherService::broadcastStoreEvent($this, ClientStoreActions::RemoveFromCollection);
     }
-    
+
     public function broadcastUpsertCollection()
     {
         PusherService::broadcastStoreEvent($this, ClientStoreActions::UpsertCollection);

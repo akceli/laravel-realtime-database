@@ -78,6 +78,12 @@ interface ClientStorePropertyInterface
      * @param $client_store_action
      * @return ClientStorePropertyInterface
      */
+    public function setDefaultAction($client_store_action): ClientStorePropertyInterface;
+
+    /**
+     * @param $client_store_action
+     * @return ClientStorePropertyInterface
+     */
     public function setCreatedAction($client_store_action): ClientStorePropertyInterface;
 
     /**

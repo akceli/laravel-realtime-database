@@ -71,8 +71,12 @@ class ClientStorePropertySingle implements ClientStorePropertyInterface
         return $this->property;
     }
 
-    public function getDataFromModel(Model $model)
+    public function getDataFromModel(Model $model = null)
     {
+        if ($model === null) {
+            return [];
+        }
+
         $eagerLoads = array_keys($this->getBuilder()->getEagerLoads());
         return (new $this->resource($model->load($eagerLoads)))->resolve();
     }

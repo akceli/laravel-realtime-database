@@ -42,7 +42,7 @@ class PusherService
         }
 
         $class_name = get_class($model);
-        $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
+        $current_state = self::$queue[$model->id.':'.$class_name]['type'] ?? 0;
         if (PusherServiceEvent::Updated > $current_state) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Updated,
@@ -63,7 +63,7 @@ class PusherService
         }
 
         $class_name = get_class($model);
-        $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
+        $current_state = self::$queue[$model->id.':'.$class_name]['type'] ?? 0;
         if (PusherServiceEvent::Created > $current_state) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Created,
@@ -84,7 +84,7 @@ class PusherService
         }
 
         $class_name = get_class($model);
-        $current_state = self::$queue[$model->id.':'.$class_name] ?? 0;
+        $current_state = self::$queue[$model->id.':'.$class_name]['type'] ?? 0;
         if (PusherServiceEvent::Deleted > $current_state) {
             self::$queue[$model->id.':'.$class_name] = [
                 'type' => PusherServiceEvent::Deleted,
@@ -109,7 +109,7 @@ class PusherService
             $id = explode(':', $identifier)[0];
 
             /** @var ClientStorePropertyInterface $storeProperty */
-            foreach (array_reverse($change_data['store_properties']) ?? [] as $storeProperty) {
+            foreach ($change_data['store_properties'] ?? [] as $storeProperty) {
                 $storeProperty->setDirty($dirty_attributes);
                 $changes = $storeProperty->getStore() .'.'. $storeProperty->getChannelId() .'.'. $storeProperty->getProperty() .'.'. $id;
 
@@ -117,7 +117,6 @@ class PusherService
                  * If channel already processed dont re process it
                  */
                 if (self::$processedChanges[$changes] ?? false) {
-                    self::$processedChanges[$changes . 'duplicated'] = true;
                     continue;
                 } else {
                     self::$processedChanges[$changes] = true;
@@ -162,9 +161,11 @@ class PusherService
             }
         }
 
+        $responseContent = self::$responseContent;
+
         self::clearQueue();
 
-        return self::$responseContent;
+        return $responseContent;
     }
 
     public static function getModel(string $class): Model
@@ -175,6 +176,8 @@ class PusherService
     public static function clearQueue()
     {
         self::$queue = [];
+        self::$processedChanges = [];
+        self::$responseContent = [];
     }
 
     /**
@@ -267,7 +270,7 @@ class PusherService
     {
         PusherService::broadcastStoreEvent(
             $storeProp->setModel($model),
-            ClientStoreActions::AddToCollection,
+            ClientStoreActions::AddToCollection
             );
     }
 
